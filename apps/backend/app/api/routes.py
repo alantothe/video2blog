@@ -1,0 +1,204 @@
+import io
+from typing import List
+from uuid import uuid4
+
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
+
+from shared import RawVideoRecord
+from app.pipeline.orchestrator import initialize_run, process_run
+from app.pipeline.stages import stage_1_clean_transcript
+from app.storage.file_store import clear_all, read_output, read_stage_result, read_status
+from utils import parse_csv
+
+router = APIRouter()
+
+
+# Hardcoded test record for /test endpoint
+TEST_RECORD = RawVideoRecord(
+    video_id="test_video_001",
+    title="How to Build AI Pipelines That Actually Work",
+    description="A deep dive into building reliable AI pipelines.",
+    channel_title="AI Engineering Podcast",
+    channel_id="UC123456",
+    video_url="https://youtube.com/watch?v=test123",
+    published_at="2024-01-15T10:00:00Z",
+    transcript="""Hey everyone, welcome back to the AI Engineering Podcast!
+Before we dive in, this video is sponsored by CloudProvider - use code AIPOD for 20% off.
+
+Okay, so today we're talking about building AI pipelines that actually work in production.
+The key insight is that you need to break things down into small, verifiable steps.
+
+Each stage should have clear inputs and outputs. You should be able to inspect
+what happened at each step. This is crucial for debugging when things go wrong.
+
+Another important point: start simple. Don't try to build the perfect system on day one.
+Get something working end to end, then iterate.
+
+For example, if you're building a content pipeline, start with just two stages:
+1. Parse the input data
+2. Process it with AI
+
+Once those work reliably, you can add more complexity.
+
+The biggest mistake I see is people trying to be too clever too early.
+Keep it simple. Make it work. Then make it better.
+
+If you found this helpful, don't forget to like and subscribe!
+And check out CloudProvider in the description below. See you next time!""",
+    transcript_status="completed",
+    transcript_extracted_at="2024-01-15T10:30:00Z",
+    feed_display_name="AI Engineering",
+    channel_summary="Technical podcast about AI engineering best practices.",
+    primary_topics='["AI", "Engineering", "Pipelines", "Production"]',
+    audience="AI Engineers and developers",
+    language_region="en-US",
+    hosts="Alex Smith",
+    formats='["podcast", "tutorial"]',
+    tone_style='["technical", "conversational"]',
+    expertise_background="Senior AI Engineer",
+    credibility_bias_notes="Practical experience-based content",
+)
+
+
+@router.post("/upload")
+async def upload_csv(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+) -> JSONResponse:
+    if not file.filename or not file.filename.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Please upload a CSV file.")
+
+    content = await file.read()
+    text = content.decode("utf-8-sig")
+    try:
+        records = parse_csv(io.StringIO(text))
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.errors()) from exc
+
+    if not records:
+        raise HTTPException(status_code=400, detail="CSV file has no rows.")
+
+    batch_id = str(uuid4())
+    run_ids: List[str] = []
+
+    for record in records:
+        meta = initialize_run(
+            record,
+            source=file.filename,
+            notes=f"batch:{batch_id}",
+        )
+        run_ids.append(meta.run_id)
+        background_tasks.add_task(process_run, record, meta)
+
+    response_payload = {
+        "batch_id": batch_id,
+        "run_ids": run_ids,
+        "message": f"Queued {len(run_ids)} pipeline runs.",
+    }
+    if len(run_ids) == 1:
+        response_payload["run_id"] = run_ids[0]
+
+    return JSONResponse(response_payload)
+
+
+@router.get("/status/{run_id}")
+async def get_status(run_id: str) -> JSONResponse:
+    status = read_status(run_id)
+    if not status:
+        raise HTTPException(status_code=404, detail="Run not found.")
+    return JSONResponse(status)
+
+
+@router.get("/result/{run_id}")
+async def get_result(
+    run_id: str,
+    format: str = "json",
+):
+    output = read_output(run_id)
+    if not output:
+        raise HTTPException(status_code=404, detail="Result not available yet.")
+
+    if format == "md":
+        return JSONResponse({
+            "run_id": run_id,
+            "markdown": output["markdown"],
+            "filename": f"{run_id}.md"
+        })
+
+    return JSONResponse({
+        "run_id": run_id,
+        "markdown": output["markdown"],
+        "artifact": output["artifact"]
+    })
+
+
+@router.post("/test-stage1")
+async def test_stage1() -> JSONResponse:
+    """
+    Test Stage 1 only (requires AI).
+
+    Useful for verifying the pipeline structure works.
+    """
+    stage1_output = stage_1_clean_transcript(TEST_RECORD)
+
+    return JSONResponse({
+        "message": "Stage 1 test completed successfully",
+        "stage_1": stage1_output.model_dump(),
+    })
+
+
+@router.post("/test")
+async def test_pipeline() -> JSONResponse:
+    """
+    Test endpoint that runs Stage 1 with a hardcoded test record.
+
+    No CSV upload needed - useful for verifying the pipeline works.
+    Requires GOOGLE_CLOUD_PROJECT environment variable for Stage 1.
+    """
+    stage1_output = stage_1_clean_transcript(TEST_RECORD)
+
+    return JSONResponse({
+        "message": "Pipeline test completed successfully",
+        "stage_1": stage1_output.model_dump(),
+    })
+
+
+@router.post("/clear")
+async def clear_database() -> JSONResponse:
+    """
+    Clear ALL data from the database.
+
+    Use this in development to start fresh between CSV uploads.
+    """
+    count = clear_all()
+    return JSONResponse({
+        "message": f"Cleared {count} runs from database",
+        "deleted_runs": count
+    })
+
+
+@router.get("/debug/{run_id}")
+async def debug_run(run_id: str) -> JSONResponse:
+    """
+    Debug endpoint: shows all stage inputs and outputs for a run.
+    """
+    status = read_status(run_id)
+    if not status:
+        raise HTTPException(status_code=404, detail="Run not found.")
+
+    stages = {}
+    for stage_name in ["stage_0", "stage_1"]:
+        stage_data = read_stage_result(run_id, stage_name)
+        if stage_data:
+            stages[stage_name] = stage_data
+
+    output = read_output(run_id)
+
+    return JSONResponse({
+        "run_id": run_id,
+        "status": status,
+        "stages": stages,
+        "output": output
+    })

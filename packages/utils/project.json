@@ -1,0 +1,19 @@
+{
+  "name": "utils",
+  "projectType": "library",
+  "sourceRoot": "packages/utils/src",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flake8 packages/utils/src"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pytest packages/utils"
+      }
+    }
+  }
+}

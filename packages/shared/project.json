@@ -1,0 +1,19 @@
+{
+  "name": "shared",
+  "projectType": "library",
+  "sourceRoot": "packages/shared/src",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "flake8 packages/shared/src"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pytest packages/shared"
+      }
+    }
+  }
+}
