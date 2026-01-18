@@ -9,6 +9,7 @@ import re
 from langchain.prompts import PromptTemplate
 from langchain_google_vertexai import VertexAI
 
+from app.storage.file_store import read_article_definitions
 from shared import Stage1Output, Stage2Output
 
 logger = logging.getLogger(__name__)
@@ -51,8 +52,11 @@ def stage_2_classify_article_type(stage1: Stage1Output, allowed_article_types: l
     # Build the article types list for the prompt
     article_types_list = "\n".join(f"- {t}" for t in allowed_article_types)
 
+    # Get article definitions from database
+    article_definitions = "\n".join(read_article_definitions())
+
     prompt = PromptTemplate(
-        input_variables=["transcript", "article_types"],
+        input_variables=["transcript", "article_types", "definitions"],
         template="""You are an article-intent classification engine.
 
 Your ONLY task is to analyze a cleaned YouTube transcript and classify
@@ -81,48 +85,7 @@ If none apply clearly, choose the closest fit based on dominant intent.
 
 CLASSIFICATION DEFINITIONS (USE THESE INTERNALLY):
 
-- How-to Guides → Teaches a process, steps, or methods to achieve an outcome.
-- Disqualifiers → Warns who should NOT do something or filters an audience.
-- Opinion Piece → Expresses personal beliefs, judgments, or persuasion.
-- In-depth Analysis → Explains causes, systems, trade-offs, or frameworks deeply.
-- Interview → Structured Q&A between two or more speakers.
-- News Article → Reports timely facts or announcements neutrally.
-- Feature Story → Narrative-driven, human-focused storytelling.
-- Case Study → Real example showing problem → action → result.
-- Listicle → Content structured primarily as a list or ranked items.
-- Explainer → Breaks down a concept simply (e.g., "What Is Travel Insurance?").
-- Beginner's Guide → Assumes zero knowledge to introduce a topic.
-- FAQ Article → Question-driven education answering common queries.
-- Myth-Busting Article → Corrects common misconceptions.
-- Comparison Article → Evaluates multiple options against each other (A vs. B).
-- Pros & Cons Breakdown → Balanced evaluation of advantages and disadvantages.
-- Buyer's Guide → Helps readers choose between products or services.
-- Review → Evaluates a single product, service, or place in depth.
-- Roundup → Summarizes multiple options with brief evaluations.
-- Best Of → Curates top recommendations in a category.
-- Cost Breakdown → Transparently details prices or budgets.
-- Checklist → Actionable, scannable to-do or packing lists.
-- Resource List → Curated list of tools, links, or services.
-- Survival Guide → Provides practical advice for challenging situations.
-- Destination Guide → Comprehensive overview of a place's highlights, logistics, and tips.
-- Itinerary Article → Day-by-day travel plan or sequence of activities.
-- Travel Diary → Personal narrative or trip report recounting experiences chronologically.
-- Where to Stay Guide → Advises on neighborhoods, lodging types, and accommodation tips.
-- When to Visit Article → Covers seasons, weather, crowds, and timing considerations.
-- Budget Travel Guide → Focuses on saving money and cost-effective strategies.
-- Luxury Travel Guide → Highlights premium experiences and upscale options.
-- Solo Travel Guide → Tailors advice for individual travelers, safety, and logistics.
-- Family Travel Guide → Offers kid-friendly planning and tips for all ages.
-- Digital Nomad Guide → Blends work and travel logistics for long-term stays.
-- Packing Guide → Recommends essential items to bring for specific trips.
-- Visa & Entry Guide → Outlines visa requirements, paperwork, and border protocols.
-- Safety Guide → Addresses risks, scams, and precautions.
-- Cultural Etiquette Guide → Explains local customs, do's and don'ts.
-- Transportation Guide → Describes getting around (trains, buses, rentals, passes).
-- Travel Inspiration Piece → Emotional or aspirational content to spark wanderlust.
-- Hidden Gems Article → Uncovers lesser-known or off-the-beaten-path spots.
-- Food Travel Guide → Explores culinary highlights, local dishes, and dining tips.
-- Adventure Guide → Focuses on activities like hiking, diving, trekking, or other adventures.
+{definitions}
 
 ---
 
@@ -164,6 +127,7 @@ TRANSCRIPT:
     full_prompt = prompt.format(
         transcript=transcript_for_classification,
         article_types=article_types_list,
+        definitions=article_definitions,
     )
     logger.info(f"  Full prompt length: {len(full_prompt)} chars")
 

@@ -1,4 +1,4 @@
-import type { ResultResponse, StatusResponse, UploadResponse } from '@shared/types'
+import type { ArticleType, ResultResponse, StatusResponse, UploadResponse } from '@shared/types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
@@ -61,4 +61,49 @@ export async function fetchDebug(runId: string): Promise<DebugResponse> {
     throw new Error('Debug fetch failed')
   }
   return response.json()
+}
+
+export async function fetchArticleTypes(): Promise<ArticleType[]> {
+  const response = await fetch(`${API_BASE_URL}/article-types`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch article types')
+  }
+  return response.json()
+}
+
+export async function createArticleType(name: string, definition: string): Promise<ArticleType> {
+  const response = await fetch(`${API_BASE_URL}/article-types`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name, definition }),
+  })
+  if (!response.ok) {
+    throw new Error('Failed to create article type')
+  }
+  return response.json()
+}
+
+export async function updateArticleType(id: number, name: string, definition: string): Promise<ArticleType> {
+  const response = await fetch(`${API_BASE_URL}/article-types/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name, definition }),
+  })
+  if (!response.ok) {
+    throw new Error('Failed to update article type')
+  }
+  return response.json()
+}
+
+export async function deleteArticleType(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/article-types/${id}`, {
+    method: 'DELETE',
+  })
+  if (!response.ok) {
+    throw new Error('Failed to delete article type')
+  }
 }

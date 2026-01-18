@@ -19,3 +19,12 @@ export type ResultResponse = {
   markdown: string
   artifact: Record<string, unknown>
 }
+
+export type ArticleType = {
+  id: number
+  name: string
+  definition: string
+  guideline: string | null
+  created_at: string
+  updated_at: string
+}

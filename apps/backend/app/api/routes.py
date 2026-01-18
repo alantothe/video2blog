@@ -9,6 +9,12 @@ from pydantic import ValidationError
 from shared import RawVideoRecord
 from app.pipeline.orchestrator import initialize_run, process_run
 from app.pipeline.stages import stage_1_clean_transcript
+from app.storage.file_store import (
+    write_article_type,
+    read_article_types,
+    get_article_type_by_name,
+    delete_article_type,
+)
 from app.storage.file_store import clear_all, read_output, read_stage_result, read_status
 from utils import parse_csv
 
@@ -202,3 +208,79 @@ async def debug_run(run_id: str) -> JSONResponse:
         "stages": stages,
         "output": output
     })
+
+
+@router.get("/article-types")
+async def get_article_types() -> JSONResponse:
+    """
+    Get all article types with their definitions.
+    """
+    try:
+        article_types = read_article_types()
+        return JSONResponse(article_types)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch article types: {str(e)}")
+
+
+@router.post("/article-types")
+async def create_article_type(request: dict) -> JSONResponse:
+    """
+    Create a new article type.
+    Request body: {"name": "Article Type Name", "definition": "Definition text"}
+    """
+    try:
+        name = request.get("name")
+        definition = request.get("definition")
+
+        if not name or not definition:
+            raise HTTPException(status_code=400, detail="Name and definition are required")
+
+        # Check if article type already exists
+        existing = get_article_type_by_name(name)
+        if existing:
+            raise HTTPException(status_code=400, detail="Article type with this name already exists")
+
+        article_type = write_article_type(name, definition)
+        return JSONResponse(article_type, status_code=201)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create article type: {str(e)}")
+
+
+@router.put("/article-types/{article_type_id}")
+async def update_article_type(article_type_id: int, request: dict) -> JSONResponse:
+    """
+    Update an existing article type.
+    Request body: {"name": "Updated Name", "definition": "Updated definition"}
+    """
+    try:
+        name = request.get("name")
+        definition = request.get("definition")
+
+        if not name or not definition:
+            raise HTTPException(status_code=400, detail="Name and definition are required")
+
+        # For updates, we'll need to implement a more specific update function
+        # For now, just create/update (SQLite will handle the upsert)
+        updated_article_type = write_article_type(name, definition)
+        return JSONResponse(updated_article_type)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update article type: {str(e)}")
+
+
+@router.delete("/article-types/{article_type_id}")
+async def delete_article_type_endpoint(article_type_id: int) -> JSONResponse:
+    """
+    Delete an article type by ID.
+    Note: This is a basic implementation - in production you'd want to check for dependencies.
+    """
+    try:
+        deleted = delete_article_type(article_type_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Article type not found")
+        return JSONResponse({"message": "Article type deleted successfully"})
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete article type: {str(e)}")
