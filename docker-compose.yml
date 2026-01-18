@@ -3,9 +3,8 @@ services:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
-    environment:
-      - DATA_DIR=data
-      - GOOGLE_CLOUD_LOCATION=us-central1
+    env_file:
+      - apps/backend/.env
     volumes:
       - ./:/app
       - ~/.config/gcloud:/root/.config/gcloud:ro  # Mount GCloud credentials

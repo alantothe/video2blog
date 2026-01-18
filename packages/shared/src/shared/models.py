@@ -54,6 +54,18 @@ class Stage1Output(BaseModel):
     cleaned_transcript: str
 
 
+class Stage2Output(BaseModel):
+    """Stage 2: Article type classification."""
+    video_id: str
+    title: str
+    classification: str  # One of 42 allowed article types
+    confidence: float    # 0.00 to 1.00
+    reasoning: str       # 1-2 sentence explanation
+    # Debug fields
+    debug_prompt: Optional[str] = None  # Full prompt sent to LLM
+    debug_raw_response: Optional[str] = None  # Raw LLM response
+
+
 # ============================================================
 # PIPELINE INFRASTRUCTURE MODELS
 # ============================================================

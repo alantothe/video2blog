@@ -4,6 +4,7 @@ from .models import (
     RawVideoRecord,
     Stage0Output,
     Stage1Output,
+    Stage2Output,
     StageResult,
 )
 
@@ -13,5 +14,6 @@ __all__ = [
     "RawVideoRecord",
     "Stage0Output",
     "Stage1Output",
+    "Stage2Output",
     "StageResult",
 ]

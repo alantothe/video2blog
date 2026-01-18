@@ -394,6 +394,86 @@ p {
   overflow-y: auto;
 }
 
+/* Result Tabs */
+.result-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0 1.5rem;
+}
+
+.result-tab {
+  font-family: 'Space Grotesk', sans-serif;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--muted);
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.result-tab:hover {
+  background: var(--accent-soft);
+}
+
+.result-tab.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+/* Classification Display */
+.classification-result {
+  text-align: center;
+  padding: 2rem;
+}
+
+.classification-type {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 1.5rem;
+}
+
+.confidence-section {
+  max-width: 300px;
+  margin: 0 auto 1.5rem;
+}
+
+.confidence-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.confidence-bar {
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.reasoning {
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 1rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
 @media (max-width: 720px) {
   .page {
     padding: 2rem 1.5rem 3rem;

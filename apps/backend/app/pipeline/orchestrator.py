@@ -1,7 +1,9 @@
 """
 Simple pipeline orchestrator.
 
-Runs: Stage 1 (extract transcript + clean with AI)
+Runs:
+- Stage 1: Extract transcript + clean with AI
+- Stage 2: Classify article type
 """
 from __future__ import annotations
 
@@ -18,7 +20,7 @@ from shared import (
 )
 
 from app.config import PIPELINE_VERSION
-from app.pipeline.stages import stage_1_clean_transcript
+from app.pipeline.stages import stage_1_clean_transcript, stage_2_classify_article_type
 from app.storage.file_store import (
     read_stage_result,
     write_artifact,
@@ -105,6 +107,31 @@ def process_run(record: RawVideoRecord, meta: PipelineMeta) -> str:
         )
         write_stage_result(run_id, "stage_1", result1.model_dump())
         stage_results["stage_1"] = result1
+
+        # ========================================
+        # STAGE 2: Article Type Classification
+        # ========================================
+        write_status(
+            run_id,
+            {
+                "run_id": run_id,
+                "stage": "stage_2",
+                "state": "running",
+                "updated_at": _now().isoformat(),
+                "error": None,
+            },
+        )
+
+        stage2 = stage_2_classify_article_type(stage1)
+        result2 = StageResult(
+            run_id=run_id,
+            stage="stage_2",
+            created_at=_now(),
+            input_refs={"stage_1": _stage_ref(run_id, "stage_1")},
+            data=stage2.model_dump(),
+        )
+        write_stage_result(run_id, "stage_2", result2.model_dump())
+        stage_results["stage_2"] = result2
 
         # ========================================
         # Output: Save to SQLite

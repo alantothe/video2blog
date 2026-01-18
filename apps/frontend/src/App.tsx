@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -15,12 +15,14 @@ import type { StatusResponse } from '@shared/types'
 const STAGE_ORDER = [
   'stage_0',
   'stage_1',
+  'stage_2',
   'complete'
 ]
 
 const STAGE_LABELS: Record<string, string> = {
   stage_0: 'Stage 0: CSV received',
   stage_1: 'Stage 1: Transcript cleaned',
+  stage_2: 'Stage 2: Article classified',
   complete: 'Complete'
 }
 
@@ -35,12 +37,21 @@ function stageProgress(stage: string): number {
 function StatusPanel({ status }: { status: StatusResponse }) {
   const progress = stageProgress(status.stage)
   const stageLabel = STAGE_LABELS[status.stage] ?? status.stage.replace(/_/g, ' ').toUpperCase()
+  const stageIndex = STAGE_ORDER.indexOf(status.stage)
   const stageOneState =
-    status.state === 'completed'
+    stageIndex >= 2 || status.state === 'completed'
       ? 'done'
       : status.stage === 'stage_1' && status.state === 'running'
         ? 'running'
         : 'pending'
+  const stageTwoState =
+    status.state === 'completed'
+      ? 'done'
+      : status.stage === 'stage_2' && status.state === 'running'
+        ? 'running'
+        : stageIndex >= 2
+          ? 'done'
+          : 'pending'
   return (
     <div className="panel">
       <div className="panel-header">
@@ -65,6 +76,10 @@ function StatusPanel({ status }: { status: StatusResponse }) {
             <span className="stage-dot" />
             <span>AI cleaned transcript</span>
           </div>
+          <div className={`stage-item ${stageTwoState}`}>
+            <span className="stage-dot" />
+            <span>Article type classified</span>
+          </div>
         </div>
         {status.evaluation_metrics ? (
           <div className="metrics">
@@ -82,11 +97,13 @@ function StatusPanel({ status }: { status: StatusResponse }) {
 }
 
 export default function App() {
+  const queryClient = useQueryClient()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [runIds, setRunIds] = useState<string[]>([])
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [showDebug, setShowDebug] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [resultTab, setResultTab] = useState<'transcript' | 'classification'>('transcript')
 
   const uploadMutation = useMutation({
     mutationFn: uploadCsv,
@@ -113,27 +130,37 @@ export default function App() {
     refetchInterval: (query) => {
       const current = query.state.data as StatusResponse | undefined
       if (!current) {
-        return 2000
+        return 1000
       }
-      return current.state === 'completed' || current.state === 'failed' ? false : 2000
+      return current.state === 'completed' || current.state === 'failed' ? false : 1000
     }
   })
 
   const resultQuery = useQuery({
     queryKey: ['result', activeRunId],
     queryFn: () => fetchResult(activeRunId as string),
-    enabled: statusQuery.data?.state === 'completed'
+    enabled: statusQuery.data?.state === 'completed',
+    staleTime: 0,  // Always refetch when enabled
   })
 
   const debugQuery = useQuery({
     queryKey: ['debug', activeRunId],
     queryFn: () => fetchDebug(activeRunId as string),
-    enabled: Boolean(activeRunId) && showDebug
+    enabled: Boolean(activeRunId) && (showDebug || resultTab === 'classification'),
+    staleTime: 0,  // Always refetch when enabled
   })
 
   const markdown = resultQuery.data?.markdown ?? ''
 
   const activeStatus = statusQuery.data
+
+  // Immediately fetch results when status changes to completed
+  useEffect(() => {
+    if (activeStatus?.state === 'completed' && activeRunId) {
+      queryClient.invalidateQueries({ queryKey: ['result', activeRunId] })
+      queryClient.invalidateQueries({ queryKey: ['debug', activeRunId] })
+    }
+  }, [activeStatus?.state, activeRunId, queryClient])
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
@@ -271,22 +298,66 @@ export default function App() {
 
         <section className="panel result">
           <div className="panel-header">
-            <h2>Cleaned transcript</h2>
-            <p>Markdown-ready transcript output for the next stage.</p>
+            <h2>Results</h2>
+            <p>Pipeline outputs from completed stages.</p>
+          </div>
+          <div className="result-tabs">
+            <button
+              type="button"
+              className={`result-tab ${resultTab === 'transcript' ? 'active' : ''}`}
+              onClick={() => setResultTab('transcript')}
+            >
+              Transcript
+            </button>
+            <button
+              type="button"
+              className={`result-tab ${resultTab === 'classification' ? 'active' : ''}`}
+              onClick={() => setResultTab('classification')}
+            >
+              Classification
+            </button>
           </div>
           <div className="panel-body">
-            {resultQuery.isFetching ? <p>Cleaning transcript...</p> : null}
-            {resultQuery.data ? (
+            {resultTab === 'transcript' ? (
               <>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
-                {activeRunId ? (
-                  <a className="download" href={resultDownloadUrl(activeRunId)}>
-                    Download transcript
-                  </a>
-                ) : null}
+                {resultQuery.isFetching ? <p>Cleaning transcript...</p> : null}
+                {resultQuery.data ? (
+                  <>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+                    {activeRunId ? (
+                      <a className="download" href={resultDownloadUrl(activeRunId)}>
+                        Download transcript
+                      </a>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="placeholder">No transcript yet. Finish Stage 1 to see results.</p>
+                )}
               </>
             ) : (
-              <p className="placeholder">No transcript yet. Finish Stage 1 to see results.</p>
+              <>
+                {(() => {
+                  const stage2Data = (debugQuery.data?.stages as Record<string, { data?: { classification?: string; confidence?: number; reasoning?: string } }>)?.stage_2?.data
+                  if (!stage2Data) {
+                    return <p className="placeholder">No classification yet. Finish Stage 2 to see results.</p>
+                  }
+                  const confidence = stage2Data.confidence ?? 0
+                  return (
+                    <div className="classification-result">
+                      <div className="classification-type">{stage2Data.classification}</div>
+                      <div className="confidence-section">
+                        <span className="confidence-label">Confidence: {Math.round(confidence * 100)}%</span>
+                        <div className="confidence-bar">
+                          <div className="confidence-fill" style={{ width: `${confidence * 100}%` }} />
+                        </div>
+                      </div>
+                      {stage2Data.reasoning ? (
+                        <p className="reasoning">"{stage2Data.reasoning}"</p>
+                      ) : null}
+                    </div>
+                  )
+                })()}
+              </>
             )}
           </div>
         </section>
@@ -313,6 +384,29 @@ export default function App() {
                   <h3>Stage 1: Transcript cleaned</h3>
                   <pre>{JSON.stringify((debugQuery.data.stages as Record<string, {data?: unknown}>)?.stage_1?.data ?? {}, null, 2)}</pre>
                 </div>
+                {(() => {
+                  const stage2 = (debugQuery.data.stages as Record<string, {data?: {debug_prompt?: string; debug_raw_response?: string; classification?: string; confidence?: number; reasoning?: string}}>)?.stage_2?.data
+                  return (
+                    <>
+                      <div className="stage-box">
+                        <h3>Stage 2: Request to Vertex AI</h3>
+                        <pre>{stage2?.debug_prompt ?? 'No prompt captured'}</pre>
+                      </div>
+                      <div className="stage-box">
+                        <h3>Stage 2: Raw Response from Vertex AI</h3>
+                        <pre>{stage2?.debug_raw_response ?? 'No response captured'}</pre>
+                      </div>
+                      <div className="stage-box">
+                        <h3>Stage 2: Parsed Result</h3>
+                        <pre>{JSON.stringify({
+                          classification: stage2?.classification,
+                          confidence: stage2?.confidence,
+                          reasoning: stage2?.reasoning,
+                        }, null, 2)}</pre>
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             ) : showDebug ? (
               <div className="panel-body">
