@@ -17,6 +17,7 @@ const STAGE_ORDER = [
   'stage_0',
   'stage_1',
   'stage_2',
+  'stage_3',
   'complete'
 ]
 
@@ -24,6 +25,7 @@ const STAGE_LABELS: Record<string, string> = {
   stage_0: 'Stage 0: CSV received',
   stage_1: 'Stage 1: Transcript cleaned',
   stage_2: 'Stage 2: Article classified',
+  stage_3: 'Stage 3: Article composed',
   complete: 'Complete'
 }
 
@@ -46,11 +48,19 @@ function StatusPanel({ status }: { status: StatusResponse }) {
         ? 'running'
         : 'pending'
   const stageTwoState =
-    status.state === 'completed'
+    stageIndex >= 3 || status.state === 'completed'
       ? 'done'
       : status.stage === 'stage_2' && status.state === 'running'
         ? 'running'
         : stageIndex >= 2
+          ? 'done'
+          : 'pending'
+  const stageThreeState =
+    status.state === 'completed'
+      ? 'done'
+      : status.stage === 'stage_3' && status.state === 'running'
+        ? 'running'
+        : stageIndex >= 3
           ? 'done'
           : 'pending'
   return (
@@ -81,6 +91,10 @@ function StatusPanel({ status }: { status: StatusResponse }) {
             <span className="stage-dot" />
             <span>Article type classified</span>
           </div>
+          <div className={`stage-item ${stageThreeState}`}>
+            <span className="stage-dot" />
+            <span>Article composed</span>
+          </div>
         </div>
         {status.evaluation_metrics ? (
           <div className="metrics">
@@ -104,7 +118,7 @@ export default function HomePage() {
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [showDebug, setShowDebug] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
-  const [resultTab, setResultTab] = useState<'transcript' | 'classification'>('transcript')
+  const [resultTab, setResultTab] = useState<'transcript' | 'classification' | 'article'>('transcript')
 
   const uploadMutation = useMutation({
     mutationFn: uploadCsv,
@@ -147,7 +161,7 @@ export default function HomePage() {
   const debugQuery = useQuery({
     queryKey: ['debug', activeRunId],
     queryFn: () => fetchDebug(activeRunId as string),
-    enabled: Boolean(activeRunId) && (showDebug || resultTab === 'classification'),
+    enabled: Boolean(activeRunId) && (showDebug || resultTab === 'classification' || resultTab === 'article'),
     staleTime: 0,  // Always refetch when enabled
   })
 
@@ -322,6 +336,13 @@ export default function HomePage() {
             >
               Classification
             </button>
+            <button
+              type="button"
+              className={`result-tab ${resultTab === 'article' ? 'active' : ''}`}
+              onClick={() => setResultTab('article')}
+            >
+              Article
+            </button>
           </div>
           <div className="panel-body">
             {resultTab === 'transcript' ? (
@@ -340,7 +361,7 @@ export default function HomePage() {
                   <p className="placeholder">No transcript yet. Finish Stage 1 to see results.</p>
                 )}
               </>
-            ) : (
+            ) : resultTab === 'classification' ? (
               <>
                 {(() => {
                   const stage2Data = (debugQuery.data?.stages as Record<string, { data?: { classification?: string; confidence?: number; reasoning?: string } }>)?.stage_2?.data
@@ -359,6 +380,50 @@ export default function HomePage() {
                       </div>
                       {stage2Data.reasoning ? (
                         <p className="reasoning">"{stage2Data.reasoning}"</p>
+                      ) : null}
+                    </div>
+                  )
+                })()}
+              </>
+            ) : (
+              <>
+                {(() => {
+                  const stage3Data = (debugQuery.data?.stages as Record<string, { data?: {
+                    article_type?: string;
+                    coverage_sufficient?: boolean;
+                    coverage_analysis?: string;
+                    missing_sections?: string[];
+                    supplemental_content?: string;
+                    final_article?: string;
+                  } }>)?.stage_3?.data
+                  if (!stage3Data) {
+                    return <p className="placeholder">No article yet. Finish Stage 3 to see results.</p>
+                  }
+                  return (
+                    <div className="article-result">
+                      <div className="article-meta">
+                        <span className="article-type-badge">{stage3Data.article_type}</span>
+                        <span className={`coverage-badge ${stage3Data.coverage_sufficient ? 'sufficient' : 'enhanced'}`}>
+                          {stage3Data.coverage_sufficient ? 'Full Coverage' : 'Enhanced with AI'}
+                        </span>
+                      </div>
+                      {!stage3Data.coverage_sufficient && stage3Data.coverage_analysis ? (
+                        <div className="coverage-info">
+                          <strong>Coverage Analysis:</strong> {stage3Data.coverage_analysis}
+                          {stage3Data.missing_sections && stage3Data.missing_sections.length > 0 ? (
+                            <div className="missing-sections">
+                              <strong>Sections enhanced:</strong> {stage3Data.missing_sections.join(', ')}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      <div className="article-content">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{stage3Data.final_article ?? ''}</ReactMarkdown>
+                      </div>
+                      {activeRunId ? (
+                        <a className="download" href={resultDownloadUrl(activeRunId)}>
+                          Download article
+                        </a>
                       ) : null}
                     </div>
                   )
@@ -408,6 +473,68 @@ export default function HomePage() {
                           classification: stage2?.classification,
                           confidence: stage2?.confidence,
                           reasoning: stage2?.reasoning,
+                        }, null, 2)}</pre>
+                      </div>
+                    </>
+                  )
+                })()}
+                {(() => {
+                  const stage3 = (debugQuery.data.stages as Record<string, {data?: {
+                    debug_coverage_prompt?: string;
+                    debug_coverage_response?: string;
+                    debug_supplement_prompt?: string;
+                    debug_supplement_response?: string;
+                    debug_composition_prompt?: string;
+                    debug_composition_response?: string;
+                    article_type?: string;
+                    coverage_sufficient?: boolean;
+                    coverage_analysis?: string;
+                    missing_sections?: string[];
+                    supplemental_content?: string;
+                    final_article?: string;
+                    guideline_used?: string;
+                  }}>)?.stage_3?.data
+                  if (!stage3) return null
+                  return (
+                    <>
+                      <div className="stage-box">
+                        <h3>Stage 3: Coverage Analysis Request</h3>
+                        <pre>{stage3?.debug_coverage_prompt ?? 'No prompt captured'}</pre>
+                      </div>
+                      <div className="stage-box">
+                        <h3>Stage 3: Coverage Analysis Response</h3>
+                        <pre>{stage3?.debug_coverage_response ?? 'No response captured'}</pre>
+                      </div>
+                      {stage3?.debug_supplement_prompt ? (
+                        <>
+                          <div className="stage-box">
+                            <h3>Stage 3: Supplement Generation Request</h3>
+                            <pre>{stage3.debug_supplement_prompt}</pre>
+                          </div>
+                          <div className="stage-box">
+                            <h3>Stage 3: Supplement Generation Response</h3>
+                            <pre>{stage3?.debug_supplement_response ?? 'No response captured'}</pre>
+                          </div>
+                        </>
+                      ) : null}
+                      <div className="stage-box">
+                        <h3>Stage 3: Article Composition Request</h3>
+                        <pre>{stage3?.debug_composition_prompt ?? 'No prompt captured'}</pre>
+                      </div>
+                      <div className="stage-box">
+                        <h3>Stage 3: Article Composition Response</h3>
+                        <pre>{stage3?.debug_composition_response ?? 'No response captured'}</pre>
+                      </div>
+                      <div className="stage-box">
+                        <h3>Stage 3: Parsed Result</h3>
+                        <pre>{JSON.stringify({
+                          article_type: stage3?.article_type,
+                          coverage_sufficient: stage3?.coverage_sufficient,
+                          coverage_analysis: stage3?.coverage_analysis,
+                          missing_sections: stage3?.missing_sections,
+                          supplemental_content_length: stage3?.supplemental_content?.length ?? 0,
+                          final_article_length: stage3?.final_article?.length ?? 0,
+                          guideline_used_length: stage3?.guideline_used?.length ?? 0,
                         }, null, 2)}</pre>
                       </div>
                     </>

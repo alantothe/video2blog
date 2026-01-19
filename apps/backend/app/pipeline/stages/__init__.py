@@ -3,6 +3,7 @@ Pipeline stages.
 
 Stage 1: Extract transcript from CSV and clean with AI (combined)
 Stage 2: Classify article type using AI
+Stage 3: Compose article with coverage analysis
 """
 from app.storage.file_store import read_article_type_names
 
@@ -20,3 +21,9 @@ def stage_2_classify_article_type(stage1):
     """Wrapper for stage 2 function."""
     from .stage_2 import stage_2_classify_article_type as _stage_2_classify_article_type
     return _stage_2_classify_article_type(stage1, ALLOWED_ARTICLE_TYPES)
+
+
+def stage_3_compose_article(stage1, stage2):
+    """Wrapper for stage 3 function."""
+    from .stage_3 import stage_3_compose_article as _stage_3_compose_article
+    return _stage_3_compose_article(stage1, stage2)

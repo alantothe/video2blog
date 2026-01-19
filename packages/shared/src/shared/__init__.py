@@ -5,6 +5,7 @@ from .models import (
     Stage0Output,
     Stage1Output,
     Stage2Output,
+    Stage3Output,
     StageResult,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "Stage0Output",
     "Stage1Output",
     "Stage2Output",
+    "Stage3Output",
     "StageResult",
 ]

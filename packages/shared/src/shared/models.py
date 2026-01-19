@@ -66,6 +66,31 @@ class Stage2Output(BaseModel):
     debug_raw_response: Optional[str] = None  # Raw LLM response
 
 
+class Stage3Output(BaseModel):
+    """Stage 3: Article composition with coverage analysis."""
+    video_id: str
+    title: str
+    article_type: str
+
+    # Coverage analysis
+    coverage_sufficient: bool
+    coverage_analysis: str
+    missing_sections: list[str]
+
+    # Content generation
+    supplemental_content: Optional[str] = None
+    final_article: str
+    guideline_used: str
+
+    # Debug fields
+    debug_coverage_prompt: Optional[str] = None
+    debug_coverage_response: Optional[str] = None
+    debug_supplement_prompt: Optional[str] = None
+    debug_supplement_response: Optional[str] = None
+    debug_composition_prompt: Optional[str] = None
+    debug_composition_response: Optional[str] = None
+
+
 # ============================================================
 # PIPELINE INFRASTRUCTURE MODELS
 # ============================================================

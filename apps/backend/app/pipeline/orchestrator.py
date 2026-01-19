@@ -4,6 +4,7 @@ Simple pipeline orchestrator.
 Runs:
 - Stage 1: Extract transcript + clean with AI
 - Stage 2: Classify article type
+- Stage 3: Compose article with coverage analysis
 """
 from __future__ import annotations
 
@@ -20,7 +21,11 @@ from shared import (
 )
 
 from app.config import PIPELINE_VERSION
-from app.pipeline.stages import stage_1_clean_transcript, stage_2_classify_article_type
+from app.pipeline.stages import (
+    stage_1_clean_transcript,
+    stage_2_classify_article_type,
+    stage_3_compose_article,
+)
 from app.storage.file_store import (
     read_stage_result,
     write_artifact,
@@ -134,12 +139,38 @@ def process_run(record: RawVideoRecord, meta: PipelineMeta) -> str:
         stage_results["stage_2"] = result2
 
         # ========================================
+        # STAGE 3: Article Composition
+        # ========================================
+        write_status(
+            run_id,
+            {
+                "run_id": run_id,
+                "stage": "stage_3",
+                "state": "running",
+                "updated_at": _now().isoformat(),
+                "error": None,
+            },
+        )
+
+        stage3 = stage_3_compose_article(stage1, stage2)
+        result3 = StageResult(
+            run_id=run_id,
+            stage="stage_3",
+            created_at=_now(),
+            input_refs={
+                "stage_1": _stage_ref(run_id, "stage_1"),
+                "stage_2": _stage_ref(run_id, "stage_2"),
+            },
+            data=stage3.model_dump(),
+        )
+        write_stage_result(run_id, "stage_3", result3.model_dump())
+        stage_results["stage_3"] = result3
+
+        # ========================================
         # Output: Save to SQLite
         # ========================================
-        markdown = f"""# {stage1.title}
-
-{stage1.cleaned_transcript}
-"""
+        # Use the final article from Stage 3
+        markdown = stage3.final_article
 
         # Save artifact with markdown
         stage_results["stage_0"] = StageResult(
