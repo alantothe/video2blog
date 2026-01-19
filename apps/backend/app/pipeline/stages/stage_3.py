@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import re
+from pathlib import Path
 
 from langchain.prompts import PromptTemplate
 from langchain_google_vertexai import VertexAI
@@ -19,6 +20,23 @@ from app.storage.file_store import get_article_type_by_name
 from shared import Stage1Output, Stage2Output, Stage3Output
 
 logger = logging.getLogger(__name__)
+
+# Path to general guidelines file
+GENERAL_GUIDELINES_PATH = Path(__file__).parent.parent.parent.parent / "data" / "general.md"
+
+
+def _load_general_guidelines() -> str:
+    """Load general guidelines from markdown file."""
+    try:
+        if GENERAL_GUIDELINES_PATH.exists():
+            content = GENERAL_GUIDELINES_PATH.read_text(encoding="utf-8").strip()
+            if content:
+                return f"\n\n---\n\nGENERAL GUIDELINES:\n\n{content}"
+        logger.warning(f"General guidelines file not found: {GENERAL_GUIDELINES_PATH}")
+        return ""
+    except Exception as e:
+        logger.warning(f"Failed to load general guidelines: {e}")
+        return ""
 
 
 def _retrieve_guideline(article_type: str) -> str:
@@ -77,8 +95,10 @@ def _check_coverage(transcript: str, guideline: str, llm) -> tuple[bool, str, li
 
     Returns: (coverage_sufficient, analysis, missing_sections, prompt, response)
     """
+    general_guidelines = _load_general_guidelines()
+
     prompt = PromptTemplate(
-        input_variables=["transcript", "guideline"],
+        input_variables=["transcript", "guideline", "general_guidelines"],
         template="""You are an article content analyst.
 
 Your task is to analyze if a YouTube transcript provides sufficient content
@@ -120,12 +140,14 @@ OUTPUT FORMAT (STRICT JSON ONLY):
 }}
 
 If coverage is sufficient, missing_sections should be an empty array [].
+{general_guidelines}
 """
     )
 
     full_prompt = prompt.format(
         transcript=transcript[:15000],  # Truncate for coverage check
         guideline=guideline,
+        general_guidelines=general_guidelines,
     )
     logger.info(f"  Coverage check prompt length: {len(full_prompt)} chars")
 
@@ -155,9 +177,10 @@ def _gather_missing_info(
     Returns: (supplemental_content, prompt, response)
     """
     sections_list = "\n".join(f"- {s}" for s in missing_sections)
+    general_guidelines = _load_general_guidelines()
 
     prompt = PromptTemplate(
-        input_variables=["transcript", "missing_sections", "article_type"],
+        input_variables=["transcript", "missing_sections", "article_type", "general_guidelines"],
         template="""You are a content enhancement specialist.
 
 The following transcript is being converted into a "{article_type}" article,
@@ -202,6 +225,7 @@ Example:
 ## [Another Section]
 
 [Content for this section...]
+{general_guidelines}
 """
     )
 
@@ -209,6 +233,7 @@ Example:
         transcript=transcript[:10000],
         missing_sections=sections_list,
         article_type=article_type,
+        general_guidelines=general_guidelines,
     )
     logger.info(f"  Supplement generation prompt length: {len(full_prompt)} chars")
 
@@ -247,8 +272,10 @@ SUPPLEMENTAL CONTENT (AI-generated to fill gaps):
 
 {supplemental}"""
 
+    general_guidelines = _load_general_guidelines()
+
     prompt = PromptTemplate(
-        input_variables=["title", "article_type", "guideline", "content"],
+        input_variables=["title", "article_type", "guideline", "content", "general_guidelines"],
         template="""You are an expert article composer.
 
 Your task is to compose a complete, polished article from the provided content,
@@ -291,6 +318,7 @@ OUTPUT FORMAT:
 Write the complete article in markdown format.
 Start with a level-1 heading (# Title).
 Use proper markdown formatting throughout.
+{general_guidelines}
 """
     )
 
@@ -299,6 +327,7 @@ Use proper markdown formatting throughout.
         article_type=article_type,
         guideline=guideline,
         content=content_section,
+        general_guidelines=general_guidelines,
     )
     logger.info(f"  Composition prompt length: {len(full_prompt)} chars")
 
