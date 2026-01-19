@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { createArticleType, deleteArticleType, fetchArticleTypes, updateArticleType } from './api'
 import type { ArticleType } from '@shared/types'
 
@@ -10,6 +12,7 @@ export default function ArticleTypesPage() {
   const [editDefinition, setEditDefinition] = useState('')
   const [newName, setNewName] = useState('')
   const [newDefinition, setNewDefinition] = useState('')
+  const [selectedArticleType, setSelectedArticleType] = useState<ArticleType | null>(null)
 
   const { data: articleTypes = [], isLoading, error } = useQuery({
     queryKey: ['article-types'],
@@ -66,6 +69,14 @@ export default function ArticleTypesPage() {
     setEditingId(null)
     setEditName('')
     setEditDefinition('')
+  }
+
+  const handleViewGuidelines = (articleType: ArticleType) => {
+    setSelectedArticleType(articleType)
+  }
+
+  const handleCloseGuidelines = () => {
+    setSelectedArticleType(null)
   }
 
   const handleDelete = (id: number) => {
@@ -224,6 +235,14 @@ export default function ArticleTypesPage() {
                         <div className="article-type-actions">
                           <button
                             type="button"
+                            onClick={() => handleViewGuidelines(articleType)}
+                            className="view-btn"
+                            aria-label={`View guidelines for ${articleType.name}`}
+                          >
+                            View Guidelines
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleEdit(articleType)}
                             className="edit-btn"
                             aria-label={`Edit ${articleType.name}`}
@@ -249,6 +268,32 @@ export default function ArticleTypesPage() {
           </div>
         </section>
       </main>
+
+      {/* Guidelines Modal */}
+      {selectedArticleType && (
+        <div className="modal-overlay" onClick={handleCloseGuidelines}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{selectedArticleType.name} Guidelines</h2>
+              <button
+                type="button"
+                onClick={handleCloseGuidelines}
+                className="close-btn"
+                aria-label="Close guidelines"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="guideline-content">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {selectedArticleType.guideline || 'No guidelines available.'}
+                </ReactMarkdown>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

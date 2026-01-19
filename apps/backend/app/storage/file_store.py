@@ -247,6 +247,15 @@ def read_article_definitions() -> list:
         return [f"- {row['name']} → {row['definition']}" for row in rows]
 
 
+def read_article_guidelines() -> list:
+    """Read article type names and guidelines for enhanced classification."""
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT name, guideline FROM article_types WHERE guideline IS NOT NULL ORDER BY name"
+        ).fetchall()
+        return [f"## {row['name']}\n{row['guideline']}" for row in rows]
+
+
 def get_article_type_by_name(name: str) -> Optional[Dict[str, Any]]:
     """Read a specific article type by name."""
     with _get_conn() as conn:
