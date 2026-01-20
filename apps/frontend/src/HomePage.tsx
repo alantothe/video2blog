@@ -86,7 +86,9 @@ function StatusPanel({ status }: { status: StatusResponse }) {
         </div>
       </div>
       <div className="panel-body">
-        <p>Last update: {new Date(status.updated_at).toLocaleString()}</p>
+        {status.state !== 'running' && (
+          <p>Last update: {new Date(status.updated_at).toLocaleString()}</p>
+        )}
         {status.error ? <p className="error">{status.error}</p> : null}
         <div className="stage-checklist">
           <div className={`stage-item ${stageOneState}`}>
@@ -480,16 +482,6 @@ export default function HomePage() {
                       <div className="generated-title">
                         <strong>Generated Title:</strong>
                         <h2 className="title-display">{stage4Data.title}</h2>
-                      </div>
-                      {stage4Data.title_guideline_used ? (
-                        <div className="title-guideline-info">
-                          <strong>Title Guideline Used:</strong>
-                          <p>{stage4Data.title_guideline_used}</p>
-                        </div>
-                      ) : null}
-                      <div className="article-content">
-                        <strong>Article Content:</strong>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{stage4Data.content ?? ''}</ReactMarkdown>
                       </div>
                       {activeRunId ? (
                         <a className="download" href={resultDownloadUrl(activeRunId)}>
