@@ -91,6 +91,21 @@ class Stage3Output(BaseModel):
     debug_composition_response: Optional[str] = None
 
 
+class Stage4Output(BaseModel):
+    """Stage 4: Article title generation."""
+    video_id: str
+    title: str  # The generated title
+    content: str  # The article draft from Stage 3
+
+    # Metadata
+    article_type: str
+    title_guideline_used: str
+
+    # Debug fields
+    debug_prompt: Optional[str] = None
+    debug_raw_response: Optional[str] = None
+
+
 # ============================================================
 # PIPELINE INFRASTRUCTURE MODELS
 # ============================================================

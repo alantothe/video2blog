@@ -40,7 +40,7 @@ class AITranscriptNormalizer:
 
         # Initialize Vertex AI with logging
         self.llm = VertexAI(
-            model_name="gemini-1.5-pro",
+            model_name="gemini-2.5-pro",
             temperature=0.1,
             max_tokens=2000,
             project=project,

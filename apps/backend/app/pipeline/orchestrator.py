@@ -5,6 +5,7 @@ Runs:
 - Stage 1: Extract transcript + clean with AI
 - Stage 2: Classify article type
 - Stage 3: Compose article with coverage analysis
+- Stage 4: Generate article title
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ from app.pipeline.stages import (
     stage_1_clean_transcript,
     stage_2_classify_article_type,
     stage_3_compose_article,
+    stage_4_generate_title,
 )
 from app.storage.file_store import (
     read_stage_result,
@@ -167,10 +169,35 @@ def process_run(record: RawVideoRecord, meta: PipelineMeta) -> str:
         stage_results["stage_3"] = result3
 
         # ========================================
+        # STAGE 4: Title Generation
+        # ========================================
+        write_status(
+            run_id,
+            {
+                "run_id": run_id,
+                "stage": "stage_4",
+                "state": "running",
+                "updated_at": _now().isoformat(),
+                "error": None,
+            },
+        )
+
+        stage4 = stage_4_generate_title(stage3)
+        result4 = StageResult(
+            run_id=run_id,
+            stage="stage_4",
+            created_at=_now(),
+            input_refs={"stage_3": _stage_ref(run_id, "stage_3")},
+            data=stage4.model_dump(),
+        )
+        write_stage_result(run_id, "stage_4", result4.model_dump())
+        stage_results["stage_4"] = result4
+
+        # ========================================
         # Output: Save to SQLite
         # ========================================
-        # Use the final article from Stage 3
-        markdown = stage3.final_article
+        # Use the content from Stage 4 (which includes the generated title)
+        markdown = stage4.content
 
         # Save artifact with markdown
         stage_results["stage_0"] = StageResult(

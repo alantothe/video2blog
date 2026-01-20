@@ -18,6 +18,7 @@ const STAGE_ORDER = [
   'stage_1',
   'stage_2',
   'stage_3',
+  'stage_4',
   'complete'
 ]
 
@@ -26,6 +27,7 @@ const STAGE_LABELS: Record<string, string> = {
   stage_1: 'Stage 1: Transcript cleaned',
   stage_2: 'Stage 2: Article classified',
   stage_3: 'Stage 3: Article composed',
+  stage_4: 'Stage 4: Title generated',
   complete: 'Complete'
 }
 
@@ -56,11 +58,19 @@ function StatusPanel({ status }: { status: StatusResponse }) {
           ? 'done'
           : 'pending'
   const stageThreeState =
-    status.state === 'completed'
+    stageIndex >= 4 || status.state === 'completed'
       ? 'done'
       : status.stage === 'stage_3' && status.state === 'running'
         ? 'running'
         : stageIndex >= 3
+          ? 'done'
+          : 'pending'
+  const stageFourState =
+    status.state === 'completed'
+      ? 'done'
+      : status.stage === 'stage_4' && status.state === 'running'
+        ? 'running'
+        : stageIndex >= 4
           ? 'done'
           : 'pending'
   return (
@@ -95,6 +105,10 @@ function StatusPanel({ status }: { status: StatusResponse }) {
             <span className="stage-dot" />
             <span>Article composed</span>
           </div>
+          <div className={`stage-item ${stageFourState}`}>
+            <span className="stage-dot" />
+            <span>Title generated</span>
+          </div>
         </div>
         {status.evaluation_metrics ? (
           <div className="metrics">
@@ -118,7 +132,7 @@ export default function HomePage() {
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [showDebug, setShowDebug] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
-  const [resultTab, setResultTab] = useState<'transcript' | 'classification' | 'article'>('transcript')
+  const [resultTab, setResultTab] = useState<'transcript' | 'classification' | 'article' | 'title'>('transcript')
 
   const uploadMutation = useMutation({
     mutationFn: uploadCsv,
@@ -161,7 +175,7 @@ export default function HomePage() {
   const debugQuery = useQuery({
     queryKey: ['debug', activeRunId],
     queryFn: () => fetchDebug(activeRunId as string),
-    enabled: Boolean(activeRunId) && (showDebug || resultTab === 'classification' || resultTab === 'article'),
+    enabled: Boolean(activeRunId) && (showDebug || resultTab === 'classification' || resultTab === 'article' || resultTab === 'title'),
     staleTime: 0,  // Always refetch when enabled
   })
 
@@ -343,6 +357,13 @@ export default function HomePage() {
             >
               Article
             </button>
+            <button
+              type="button"
+              className={`result-tab ${resultTab === 'title' ? 'active' : ''}`}
+              onClick={() => setResultTab('title')}
+            >
+              Title
+            </button>
           </div>
           <div className="panel-body">
             {resultTab === 'transcript' ? (
@@ -385,7 +406,7 @@ export default function HomePage() {
                   )
                 })()}
               </>
-            ) : (
+            ) : resultTab === 'article' ? (
               <>
                 {(() => {
                   const stage3Data = (debugQuery.data?.stages as Record<string, { data?: {
@@ -419,6 +440,46 @@ export default function HomePage() {
                       ) : null}
                       <div className="article-content">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{stage3Data.final_article ?? ''}</ReactMarkdown>
+                      </div>
+                      {activeRunId ? (
+                        <a className="download" href={resultDownloadUrl(activeRunId)}>
+                          Download article
+                        </a>
+                      ) : null}
+                    </div>
+                  )
+                })()}
+              </>
+            ) : (
+              <>
+                {(() => {
+                  const stage4Data = (debugQuery.data?.stages as Record<string, { data?: {
+                    title?: string;
+                    content?: string;
+                    article_type?: string;
+                    title_guideline_used?: string;
+                  } }>)?.stage_4?.data
+                  if (!stage4Data) {
+                    return <p className="placeholder">No title yet. Finish Stage 4 to see results.</p>
+                  }
+                  return (
+                    <div className="title-result">
+                      <div className="article-meta">
+                        <span className="article-type-badge">{stage4Data.article_type}</span>
+                      </div>
+                      <div className="generated-title">
+                        <strong>Generated Title:</strong>
+                        <h2 className="title-display">{stage4Data.title}</h2>
+                      </div>
+                      {stage4Data.title_guideline_used ? (
+                        <div className="title-guideline-info">
+                          <strong>Title Guideline Used:</strong>
+                          <p>{stage4Data.title_guideline_used}</p>
+                        </div>
+                      ) : null}
+                      <div className="article-content">
+                        <strong>Article Content:</strong>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{stage4Data.content ?? ''}</ReactMarkdown>
                       </div>
                       {activeRunId ? (
                         <a className="download" href={resultDownloadUrl(activeRunId)}>
@@ -535,6 +596,38 @@ export default function HomePage() {
                           supplemental_content_length: stage3?.supplemental_content?.length ?? 0,
                           final_article_length: stage3?.final_article?.length ?? 0,
                           guideline_used_length: stage3?.guideline_used?.length ?? 0,
+                        }, null, 2)}</pre>
+                      </div>
+                    </>
+                  )
+                })()}
+                {(() => {
+                  const stage4 = (debugQuery.data.stages as Record<string, {data?: {
+                    debug_prompt?: string;
+                    debug_raw_response?: string;
+                    title?: string;
+                    content?: string;
+                    article_type?: string;
+                    title_guideline_used?: string;
+                  }}>)?.stage_4?.data
+                  if (!stage4) return null
+                  return (
+                    <>
+                      <div className="stage-box">
+                        <h3>Stage 4: Title Generation Request</h3>
+                        <pre>{stage4?.debug_prompt ?? 'No prompt captured'}</pre>
+                      </div>
+                      <div className="stage-box">
+                        <h3>Stage 4: Title Generation Response</h3>
+                        <pre>{stage4?.debug_raw_response ?? 'No response captured'}</pre>
+                      </div>
+                      <div className="stage-box">
+                        <h3>Stage 4: Parsed Result</h3>
+                        <pre>{JSON.stringify({
+                          title: stage4?.title,
+                          article_type: stage4?.article_type,
+                          title_guideline_used_length: stage4?.title_guideline_used?.length ?? 0,
+                          content_length: stage4?.content?.length ?? 0,
                         }, null, 2)}</pre>
                       </div>
                     </>

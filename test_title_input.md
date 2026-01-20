@@ -31,6 +31,9 @@ Generate a single, optimized title for the article provided below. The title mus
 - No explanations, reasoning, alternatives, or formatting
 - No quotation marks
 - Format the title in title case, capitalizing the main words
+- Please ensure the title is complete and fully formed 
+- The title must be fully formed and not cut off. Make sure the response includes the entire title without any truncation.
+The title should accurately reflect the key points of the article and avoid any hallucinations or inaccuracies.
 
 
 ```
