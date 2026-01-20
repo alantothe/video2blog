@@ -1,127 +1,290 @@
-# AI Blog Writer Monorepo
+# AI Blog Writer
 
-An Nx-managed monorepo that turns CSV video metadata into a multi-stage AI
-pipeline, producing a Markdown article with provenance-aware citations.
+An intelligent content creation platform that transforms YouTube video transcripts into polished, publication-ready blog articles using AI-powered processing pipelines.
 
-<h2 style="margin-bottom: 0.5rem;">Frontend (apps/frontend):</h2>
-<p>
-<img alt="TypeScript" src="https://img.shields.io/badge/typescript-007ACC?style=for-the-badge&logo=typescript&logoColor=white"/>
- <img alt="React" src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB"/>
- <img alt="CSS" src="https://img.shields.io/badge/css-%231572B6.svg?style=for-the-badge&logo=css&logoColor=white"/>
+## What It Does
 
-</p>
-<h2 style="margin-bottom: 0.5rem;">Backend (apps/backend):</h2>
+AI Blog Writer automates the conversion of raw video transcripts into structured, engaging blog posts. Upload a CSV file containing video metadata and transcripts, and the system will:
+
+1. **Clean & Process Transcripts** - Remove ads, intros, and filler content using AI
+2. **Classify Content Type** - Automatically determine the best article format (reviews, guides, tutorials, etc.)
+3. **Compose Articles** - Generate well-structured articles following editorial guidelines
+4. **Generate Titles** - Create compelling, SEO-friendly headlines
+
+The result is professional-quality articles ready for publication, with full provenance tracking and structured data output.
+
+## Key Features
+
+- **Batch Processing** - Process multiple videos simultaneously via CSV upload
+- **AI-Powered Pipeline** - 4-stage intelligent processing with Google Vertex AI (Gemini)
+- **Web Interface** - Clean, modern React frontend for monitoring and managing processing
+- **REST API** - Full FastAPI backend for programmatic access
+- **Provenance Tracking** - Complete audit trail of AI decisions and transformations
+- **Article Type Templates** - 40+ predefined article formats with custom guidelines
+- **Export Options** - Markdown articles + structured JSON artifacts
+
+## Technology Stack
+
+<h3>Backend (apps/backend)</h3>
 <p>
 <img alt="Python" src="https://img.shields.io/badge/Python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54"/>
 <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white"/>
 <img alt="SQLite" src="https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white"/>
-
-</p>
-
-<h2>AI Integration – Content Processing</h2>
-<p>
 <img alt="Vertex AI" src="https://img.shields.io/badge/Vertex%20AI-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white"/>
 </p>
 
+<h3>Frontend (apps/frontend)</h3>
+<p>
+<img alt="TypeScript" src="https://img.shields.io/badge/typescript-007ACC?style=for-the-badge&logo=typescript&logoColor=white"/>
+<img alt="React" src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB"/>
+<img alt="CSS" src="https://img.shields.io/badge/css-%231572B6.svg?style=for-the-badge&logo=css&logoColor=white"/>
+<img alt="Vite" src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white"/>
+</p>
 
-## Workspace layout
+## Project Structure
 
 ```
-apps/frontend     # Vite + React + TanStack Query SPA
-apps/backend      # FastAPI service (Python 3.11)
-packages/shared   # Pydantic schemas and shared types
-packages/utils    # CSV parsing, normalization, chunking, Weaviate helpers
-output            # Generated Markdown + aggregated artifact JSON
+apps/
+├── backend/           # FastAPI service (Python 3.11)
+│   ├── app/
+│   │   ├── api/routes.py      # REST endpoints
+│   │   ├── pipeline/          # 4-stage AI processing pipeline
+│   │   │   ├── orchestrator.py
+│   │   │   └── stages/        # Individual pipeline stages
+│   │   └── storage/           # File and database operations
+│   └── tests/                 # Backend unit tests
+└── frontend/          # React SPA (Vite + TanStack Query)
+    └── src/           # React components and API client
+
+packages/
+├── shared/            # Pydantic models & TypeScript types
+└── utils/             # CSV parsing, text processing utilities
+
+output/                # Generated articles and artifacts
+data/                  # Pipeline stage data and article guidelines
 ```
 
 ## Prerequisites
 
-- Node.js 20+
-- Python 3.11+
-- Docker + Docker Compose (optional)
+- **Node.js** 20+
+- **Python** 3.11+
+- **Google Cloud Project** with Vertex AI enabled
+- **Docker** + Docker Compose (optional, for full containerized setup)
 
-## Setup
+## Quick Start
+
+### 1. Clone and Install Dependencies
 
 ```bash
+# Install Node.js dependencies
 npm install
+
+# Set up Python virtual environment
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r apps/backend/requirements.txt -r apps/backend/requirements-dev.txt
 ```
 
-Copy environment files:
+### 2. Configure Environment
 
 ```bash
+# Copy environment templates
 cp apps/backend/.env.example apps/backend/.env
 cp apps/frontend/.env.example apps/frontend/.env
-```
 
-**Important**: Edit `apps/backend/.env` and set your actual Google Cloud Project ID:
-
-```bash
+# Edit backend .env with your Google Cloud Project ID
 GOOGLE_CLOUD_PROJECT=your-actual-gcp-project-id
 ```
 
-You also need to authenticate with Google Cloud:
+### 3. Set Up Google Cloud Vertex AI
+
+**Prerequisites:**
+- A Google Cloud Project with billing enabled
+- Vertex AI API enabled in your project
+
+**Step 1: Enable Vertex AI API**
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Select your project (or create a new one)
+3. Navigate to "APIs & Services" > "Library"
+4. Search for "Vertex AI API" and enable it
+
+**Step 2: Authenticate with Google Cloud**
 
 ```bash
+# Authenticate with your Google account
 gcloud auth application-default login
+
+# Set your project (replace with your actual project ID)
+gcloud config set project YOUR_PROJECT_ID
+
+# Verify authentication
+gcloud auth list
 ```
 
-## Development
+**Step 3: Configure Environment Variables**
+
+Ensure your `apps/backend/.env` file contains:
+```bash
+GOOGLE_CLOUD_PROJECT=your-actual-gcp-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
+```
+
+**Additional Resources:**
+- [Vertex AI Documentation](https://cloud.google.com/vertex-ai/docs)
+- [Enable Vertex AI API](https://console.cloud.google.com/apis/library/aiplatform.googleapis.com)
+- [Google Cloud Console](https://console.cloud.google.com/)
+
+### 4. Start Development Servers
 
 ```bash
+# Terminal 1: Start backend (FastAPI)
 npx nx serve backend
+
+# Terminal 2: Start frontend (Vite)
 npx nx serve frontend
 ```
 
-Frontend runs on `http://localhost:5173` and backend on `http://localhost:8000`.
+Access the application at:
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000
 
-## Docker
+## Docker Setup (Alternative)
+
+For a fully containerized environment:
 
 ```bash
 docker compose up --build
 ```
 
-This starts:
-- FastAPI backend (`:8000`)
-- Vite frontend (`:5173`)
-- Weaviate (`:8080`)
+This starts all services:
+- FastAPI backend (:8000)
+- React frontend (:5173)
+- Weaviate vector database (:8080)
 
-## Upload a CSV
+## Usage
 
+### Web Interface
+
+1. Open http://localhost:5173
+2. Upload a CSV file containing video metadata and transcripts
+3. Monitor the 4-stage processing pipeline in real-time
+4. Download the generated articles when complete
+
+### API Usage
+
+#### Upload CSV for Processing
 ```bash
-curl -F "file=@/path/to/your.csv" http://localhost:8000/upload
+curl -F "file=@videos.csv" http://localhost:8000/upload
 ```
 
-Then poll:
-
+#### Check Processing Status
 ```bash
 curl http://localhost:8000/status/<run_id>
 ```
 
-Fetch results:
-
+#### Get Results
 ```bash
+# Get JSON response with article and metadata
 curl http://localhost:8000/result/<run_id>
+
+# Get just the markdown article
 curl http://localhost:8000/result/<run_id>?format=md
 ```
 
-Markdown output is saved to `output/<run_id>.md` and the aggregated artifact is
-stored at `output/<run_id>/video_artifact.json`.
+### CSV Format
 
-## Nx tasks
+Your CSV should contain these columns:
+- `video_id` - Unique video identifier
+- `title` - Video title
+- `transcript` - Full video transcript text
+- `channel_title`, `description`, `video_url`, etc. (additional metadata)
+
+See the test data in `apps/backend/data/` for examples.
+
+## Pipeline Stages
+
+The AI processing pipeline consists of 4 sequential stages:
+
+### Stage 1: Transcript Cleaning
+- Removes ads, sponsorships, and promotional content
+- Eliminates intros, outros, and calls-to-action
+- Preserves core educational/informational content
+- Uses AI to identify and extract relevant material
+
+### Stage 2: Article Type Classification
+- Analyzes cleaned transcript content
+- Classifies into one of 40+ article types (guides, reviews, tutorials, etc.)
+- Uses predefined editorial guidelines for each type
+- Provides confidence scoring for classification decisions
+
+### Stage 3: Article Composition
+- Retrieves editorial guidelines for the classified article type
+- Performs coverage analysis to identify content gaps
+- Generates supplemental content for missing sections
+- Composes final structured article following professional standards
+
+### Stage 4: Title Generation
+- Creates compelling, SEO-friendly headlines
+- Follows title guidelines specific to each article type
+- Maintains consistency with original video content
+- Optimizes for readability and engagement
+
+## Development
+
+### Available Nx Commands
 
 ```bash
-npx nx lint frontend
-npx nx test backend
-npx nx build frontend
-npx nx docker-build backend
+# Development servers
+npx nx serve backend      # FastAPI dev server
+npx nx serve frontend     # Vite dev server
+
+# Quality checks
+npx nx lint backend       # Python linting (flake8)
+npx nx lint frontend      # TypeScript/ESLint
+
+# Testing
+npx nx test backend       # Run Python tests (pytest)
+
+# Building
+npx nx build frontend     # Production build
+npx nx build backend      # Python bytecode compilation
 ```
 
-Python targets are configured through Nx with the `@nxlv/python` plugin (plus
-run-commands for local tooling).
+### Testing the Pipeline
 
-## Notes
+```bash
+# Test individual pipeline stages
+curl -X POST http://localhost:8000/test-stage1
 
-- Stage outputs are stored under `data/runs/<run_id>/`.
+# Test full pipeline with sample data
+curl -X POST http://localhost:8000/test
+
+# Clear database between tests
+curl -X POST http://localhost:8000/clear
+```
+
+## Output Formats
+
+Each processed video generates:
+
+- **Markdown Article** (`output/<run_id>.md`) - Publication-ready blog post
+- **Structured Artifact** (`output/<run_id>/video_artifact.json`) - Complete processing metadata
+- **Stage Data** (`data/runs/<run_id>/`) - Individual pipeline stage outputs for debugging
+
+## Contributing
+
+1. Follow the established code style (Black for Python, Prettier for TypeScript)
+2. Add tests for new functionality
+3. Update documentation for API changes
+4. Use conventional commit messages
+
+## License
+
+This project is private and proprietary.
+
+## Support
+
+For issues or questions:
+1. Check the debug endpoint: `GET /debug/<run_id>`
+2. Review pipeline stage outputs in `data/runs/<run_id>/`
+3. Check backend logs for AI processing details
