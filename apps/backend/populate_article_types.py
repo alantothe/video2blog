@@ -32,7 +32,6 @@ ARTICLE_TYPE_DATA = [
     ("FAQ Article", "Question-driven education answering common queries."),
     ("Myth-Busting Article", "Corrects common misconceptions."),
     ("Comparison Article", "Evaluates multiple options against each other (A vs. B)."),
-    ("Pros & Cons Breakdown", "Balanced evaluation of advantages and disadvantages."),
     ("Buyer's Guide", "Helps readers choose between products or services."),
     ("Review", "Evaluates a single product, service, or place in depth."),
     ("Roundup", "Summarizes multiple options with brief evaluations."),

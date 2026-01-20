@@ -49,7 +49,6 @@ FILENAME_TO_ARTICLE_TYPE = {
     "News Article.md": "News Article",
     "Opinion Pieces.md": "Opinion Piece",
     "Packing Guide.md": "Packing Guide",
-    "Pros & Cons Breakdown.md": "Pros & Cons Breakdown",
     "Resource List.md": "Resource List",
     "Review.md": "Review",
     "Roundup.md": "Roundup",
