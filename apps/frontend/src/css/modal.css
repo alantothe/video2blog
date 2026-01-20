@@ -149,9 +149,3 @@
   color: var(--accent);
   border-color: var(--accent);
 }
-
-.article-type-actions .view-btn:hover,
-.article-type-action .view-btn:hover {
-  background: var(--accent);
-  color: white;
-}

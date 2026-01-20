@@ -57,22 +57,8 @@
   border: 1px solid var(--border);
   background: white;
   color: var(--muted);
-  transition: all 0.2s ease;
   flex: 1;
   min-height: 44px;
-}
-
-.article-type-actions .edit-btn:hover,
-.article-type-action .edit-btn:hover {
-  background: var(--accent-soft);
-  color: var(--ink);
-}
-
-.article-type-actions .delete-btn:hover,
-.article-type-action .delete-btn:hover {
-  background: #fee;
-  color: #b23a48;
-  border-color: #b23a48;
 }
 
 .edit-form {

@@ -274,14 +274,24 @@ export default function HomePage() {
                 onChange={handleFileSelect}
                 style={{ display: 'none' }}
               />
-              <span>
-                {selectedFile
-                  ? selectedFile.name
-                  : isDragOver
+              {selectedFile ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                  <span>{selectedFile.name}</span>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" fill="#f36f2b"/>
+                    <path d="M14 9H13V4L18 9H14Z" fill="#f36f2b"/>
+                    <path d="M16 13H8V15H16V13Z" fill="white"/>
+                    <path d="M16 17H8V19H16V17Z" fill="white"/>
+                  </svg>
+                </div>
+              ) : (
+                <span>
+                  {isDragOver
                     ? 'Drop CSV file here'
                     : 'Choose a CSV file or drag and drop'
-                }
-              </span>
+                  }
+                </span>
+              )}
             </div>
             <div className="button-row">
               <button type="submit" disabled={!selectedFile || uploadMutation.isPending}>
