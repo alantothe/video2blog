@@ -1,6 +1,6 @@
 .page {
   padding: 2rem 6vw 3rem;
-  max-width: 1280px;
+  max-width: 1664px;
   margin: 0 auto;
 }
 
@@ -17,6 +17,18 @@
   max-width: 800px;
   margin: 0 auto;
   line-height: 1.1;
+}
+
+.underline-text {
+  text-decoration: underline;
+  text-decoration-color: #f36f2b;
+  text-decoration-thickness: 5px;
+  text-underline-offset: 6px;
+}
+
+.orange-dot {
+  color: #f36f2b;
+  font-weight: 700;
 }
 
 .lede {
@@ -101,6 +113,12 @@
   color: var(--muted);
   margin: 0;
   line-height: 1.5;
+}
+
+/* Larger text for upload panel description */
+.panel.upload .panel-header p {
+  font-size: 1.25rem;
+  font-weight: 400;
 }
 
 /* Responsive improvements for StatusPanel */

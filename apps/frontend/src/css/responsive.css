@@ -57,13 +57,15 @@
 
   /* File input improvements for mobile */
   .file-input {
-    padding: 2rem 1.5rem;
-    min-height: 140px;
+    padding: 2.5rem 1.5rem;
+    min-height: 220px;
+    gap: 1.25rem;
   }
 
   .file-input span {
-    font-size: 0.95rem;
+    font-size: 1rem;
   }
+
 
   /* Button improvements for mobile */
   .button-row {

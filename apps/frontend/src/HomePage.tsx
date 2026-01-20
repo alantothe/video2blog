@@ -280,18 +280,24 @@ export default function HomePage() {
   }
 
   const activeBadge = useMemo(() => {
-    if (!activeRunId) {
-      return 'Awaiting Upload'
+    if (activeRunId) {
+      return `Active run: ${activeRunId}`
     }
-    return `Active run: ${activeRunId}`
-  }, [activeRunId])
+    if (uploadMutation.isPending) {
+      return 'Uploading...'
+    }
+    if (selectedFile) {
+      return 'File Selected'
+    }
+    return 'Awaiting Upload'
+  }, [activeRunId, selectedFile, uploadMutation.isPending])
 
   return (
     <div className="page">
       <header className="hero">
         <div>
           <p className="eyebrow">Questurian Studio</p>
-          <h1>Turn Youtube transcripts into clean articles.</h1>
+          <h1>Turn YouTube transcripts into <span className="underline-text">clean articles</span><span className="orange-dot">.</span></h1>
           <p className="lede">
             Transform raw transcripts into polished articles with AI-powered precision.
           </p>
@@ -309,7 +315,7 @@ export default function HomePage() {
           <section className="panel upload">
             <div className="panel-header">
               <h2>Upload CSV</h2>
-              <p>Each row becomes a dedicated pipeline run.</p>
+              <p>Upload a CSV file with YouTube video transcripts, and our AI will transform each one into a professionally written article, complete with smart classification, content enhancement, and compelling titles.</p>
             </div>
             <form className="panel-body" onSubmit={handleSubmit}>
               <div
@@ -355,14 +361,11 @@ export default function HomePage() {
                   onClick={() => clearMutation.mutate()}
                   disabled={clearMutation.isPending}
                 >
-                  {clearMutation.isPending ? 'Clearing...' : 'Clear DB'}
+                  {clearMutation.isPending ? 'Clearing...' : 'Clear'}
                 </button>
               </div>
               {uploadMutation.isError ? (
                 <p className="error">Upload failed. Check the backend logs.</p>
-              ) : null}
-              {clearMutation.isSuccess ? (
-                <p className="success">Database cleared!</p>
               ) : null}
               {runIds.length > 1 ? (
                 <div className="run-list">
