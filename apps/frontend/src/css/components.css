@@ -44,7 +44,7 @@
   border: 2px dashed var(--border);
   cursor: pointer;
   background: rgba(255, 255, 255, 0.3);
-  min-height: 160px;
+  min-height: 200px;
   text-align: center;
 }
 
@@ -148,12 +148,12 @@
 }
 
 .nav-link {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 999px;
   background: white;
   color: var(--accent);
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 500;
   border: 1px solid var(--border);
   transition: background-color 0.2s ease, color 0.2s ease;

@@ -55,8 +55,3 @@ h3 {
   font-family: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
   margin: 0 0 0.5rem;
 }
-
-p {
-  margin: 0 0 1rem;
-  color: var(--muted);
-}

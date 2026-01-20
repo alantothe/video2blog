@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -12,6 +11,7 @@ import {
   uploadCsv
 } from './api'
 import type { StatusResponse } from '@shared/types'
+import payloadLogoUrl from './assets/payload-logo.svg?url'
 
 const STAGE_ORDER = [
   'stage_0',
@@ -41,8 +41,59 @@ function stageProgress(stage: string): number {
 
 function StatusPanel({ status }: { status: StatusResponse }) {
   const progress = stageProgress(status.stage)
-  const stageLabel = STAGE_LABELS[status.stage] ?? status.stage.replace(/_/g, ' ').toUpperCase()
+
+  // Custom logic for stage_0 label
+  let stageLabel: string
+  if (status.stage === 'stage_0') {
+    stageLabel = status.run_id === 'dev-mode' ? 'Awaiting Data' : 'Data Received'
+  } else {
+    stageLabel = STAGE_LABELS[status.stage] ?? status.stage.replace(/_/g, ' ').toUpperCase()
+  }
+
   const stageIndex = STAGE_ORDER.indexOf(status.stage)
+
+  // Determine current phase for each stage based on pipeline state
+  const getStagePhase = (stageNum: number) => {
+    // If we're at the initial stage (CSV received), all stages are pending
+    if (stageIndex === 0) {
+      return 'Pending'
+    }
+
+    // If entire pipeline is completed, all stages are completed
+    if (status.state === 'completed') {
+      return 'Completed'
+    }
+
+    // If we've progressed past this stage, it's completed
+    if (stageIndex > stageNum) {
+      return 'Completed'
+    }
+
+    // If this is the current stage, show the phase based on state
+    if (stageIndex === stageNum) {
+      if (status.state === 'running') {
+        switch (stageNum) {
+          case 1:
+            return 'Clean Transcript'
+          case 2:
+            return 'Classify Article Type'
+          case 3:
+            return 'Compose Article'
+          case 4:
+            return 'Generate Title'
+          default:
+            return 'Processing'
+        }
+      } else {
+        // Current stage but not running (could be failed or just started)
+        return 'Completed'
+      }
+    }
+
+    // If we haven't reached this stage yet, it's pending
+    return 'Pending'
+  }
+
   const stageOneState =
     stageIndex >= 2 || status.state === 'completed'
       ? 'done'
@@ -81,35 +132,25 @@ function StatusPanel({ status }: { status: StatusResponse }) {
           <h2>{stageLabel}</h2>
           <p className={`status ${status.state}`}>{status.state}</p>
         </div>
-        <div className="progress">
-          <div className="progress-bar" style={{ width: `${progress}%` }} />
-        </div>
       </div>
       <div className="panel-body">
-        {status.state !== 'running' && (
-          <p>Last update: {new Date(status.updated_at).toLocaleString()}</p>
-        )}
         {status.error ? <p className="error">{status.error}</p> : null}
         <div className="stage-checklist">
           <div className={`stage-item ${stageOneState}`}>
             <span className="stage-dot" />
-            <span>Transcript extracted</span>
-          </div>
-          <div className={`stage-item ${stageOneState}`}>
-            <span className="stage-dot" />
-            <span>AI cleaned transcript</span>
+            <span>Stage 1 - ({getStagePhase(1)})</span>
           </div>
           <div className={`stage-item ${stageTwoState}`}>
             <span className="stage-dot" />
-            <span>Article type classified</span>
+            <span>Stage 2 - ({getStagePhase(2)})</span>
           </div>
           <div className={`stage-item ${stageThreeState}`}>
             <span className="stage-dot" />
-            <span>Article composed</span>
+            <span>Stage 3 - ({getStagePhase(3)})</span>
           </div>
           <div className={`stage-item ${stageFourState}`}>
             <span className="stage-dot" />
-            <span>Title generated</span>
+            <span>Stage 4 - ({getStagePhase(4)})</span>
           </div>
         </div>
         {status.evaluation_metrics ? (
@@ -134,7 +175,8 @@ export default function HomePage() {
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [showDebug, setShowDebug] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
-  const [resultTab, setResultTab] = useState<'transcript' | 'classification' | 'article' | 'title'>('transcript')
+  const [resultTab, setResultTab] = useState<'final' | 'transcript' | 'classification' | 'article' | 'title'>('final')
+  const [showPayloadDialog, setShowPayloadDialog] = useState(false)
 
   const uploadMutation = useMutation({
     mutationFn: uploadCsv,
@@ -177,11 +219,18 @@ export default function HomePage() {
   const debugQuery = useQuery({
     queryKey: ['debug', activeRunId],
     queryFn: () => fetchDebug(activeRunId as string),
-    enabled: Boolean(activeRunId) && (showDebug || resultTab === 'classification' || resultTab === 'article' || resultTab === 'title'),
+    enabled: Boolean(activeRunId) && (showDebug || resultTab === 'final' || resultTab === 'transcript' || resultTab === 'classification' || resultTab === 'article' || resultTab === 'title'),
     staleTime: 0,  // Always refetch when enabled
   })
 
   const markdown = resultQuery.data?.markdown ?? ''
+
+  // Function to remove the first heading from article content for the Article tab
+  const removeTitleFromArticle = (articleContent: string): string => {
+    if (!articleContent) return articleContent
+    // Remove the first level-1 heading (# Title) and any following empty lines
+    return articleContent.replace(/^# .+\n+\n?/, '').trim()
+  }
 
   const activeStatus = statusQuery.data
 
@@ -232,7 +281,7 @@ export default function HomePage() {
 
   const activeBadge = useMemo(() => {
     if (!activeRunId) {
-      return 'Awaiting upload'
+      return 'Awaiting Upload'
     }
     return `Active run: ${activeRunId}`
   }, [activeRunId])
@@ -241,249 +290,317 @@ export default function HomePage() {
     <div className="page">
       <header className="hero">
         <div>
-          <p className="eyebrow">AI Pipeline Studio</p>
-          <h1>Transform raw video transcripts into clean, ready-to-use drafts.</h1>
+          <p className="eyebrow">Questurian Studio</p>
+          <h1>Turn Youtube transcripts into clean articles.</h1>
           <p className="lede">
-            Upload a CSV, watch the transcript cleanup, and download the cleaned output for stage 2.
+            Transform raw transcripts into polished articles with AI-powered precision.
           </p>
         </div>
         <div className="badge-row">
           <div className="badge">
             {activeBadge}
           </div>
-          <Link to="/article-types" className="nav-link">Manage Types</Link>
         </div>
       </header>
 
       <main className="layout">
-        <section className="panel upload">
-          <div className="panel-header">
-            <h2>Upload CSV</h2>
-            <p>Each row becomes a dedicated pipeline run.</p>
-          </div>
-          <form className="panel-body" onSubmit={handleSubmit}>
-            <div
-              className={`file-input ${isDragOver ? 'drag-over' : ''}`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => document.getElementById('csv-file-input')?.click()}
-            >
-              <input
-                id="csv-file-input"
-                type="file"
-                accept=".csv"
-                onChange={handleFileSelect}
-                style={{ display: 'none' }}
-              />
-              {selectedFile ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                  <span>{selectedFile.name}</span>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" fill="#f36f2b"/>
-                    <path d="M14 9H13V4L18 9H14Z" fill="#f36f2b"/>
-                    <path d="M16 13H8V15H16V13Z" fill="white"/>
-                    <path d="M16 17H8V19H16V17Z" fill="white"/>
-                  </svg>
-                </div>
-              ) : (
-                <span>
-                  {isDragOver
-                    ? 'Drop CSV file here'
-                    : 'Choose a CSV file or drag and drop'
-                  }
-                </span>
-              )}
+        {!activeRunId ? (
+          // Upload phase - show upload panel
+          <section className="panel upload">
+            <div className="panel-header">
+              <h2>Upload CSV</h2>
+              <p>Each row becomes a dedicated pipeline run.</p>
             </div>
-            <div className="button-row">
-              <button type="submit" disabled={!selectedFile || uploadMutation.isPending}>
-                {uploadMutation.isPending ? 'Uploading...' : 'Start pipeline'}
-              </button>
-              <button
-                type="button"
-                className="clear-btn"
-                onClick={() => clearMutation.mutate()}
-                disabled={clearMutation.isPending}
+            <form className="panel-body" onSubmit={handleSubmit}>
+              <div
+                className={`file-input ${isDragOver ? 'drag-over' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('csv-file-input')?.click()}
               >
-                {clearMutation.isPending ? 'Clearing...' : 'Clear DB'}
-              </button>
-            </div>
-            {uploadMutation.isError ? (
-              <p className="error">Upload failed. Check the backend logs.</p>
-            ) : null}
-            {clearMutation.isSuccess ? (
-              <p className="success">Database cleared!</p>
-            ) : null}
-            {runIds.length > 1 ? (
-              <div className="run-list">
-                {runIds.map((runId) => (
-                  <button
-                    type="button"
-                    key={runId}
-                    className={runId === activeRunId ? 'run active' : 'run'}
-                    onClick={() => setActiveRunId(runId)}
-                  >
-                    {runId}
-                  </button>
-                ))}
+                <input
+                  id="csv-file-input"
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+                {selectedFile ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>{selectedFile.name}</span>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" fill="#f36f2b"/>
+                      <path d="M14 9H13V4L18 9H14Z" fill="#f36f2b"/>
+                      <path d="M16 13H8V15H16V13Z" fill="white"/>
+                      <path d="M16 17H8V19H16V17Z" fill="white"/>
+                    </svg>
+                  </div>
+                ) : (
+                  <span>
+                    {isDragOver
+                      ? 'Drop CSV file here'
+                      : 'Choose a CSV file or drag and drop'
+                    }
+                  </span>
+                )}
               </div>
-            ) : null}
-          </form>
-        </section>
-
-        {activeStatus ? (
+              <div className="button-row">
+                <button type="submit" disabled={!selectedFile || uploadMutation.isPending}>
+                  {uploadMutation.isPending ? 'Uploading...' : 'Start pipeline'}
+                </button>
+                <button
+                  type="button"
+                  className="clear-btn"
+                  onClick={() => clearMutation.mutate()}
+                  disabled={clearMutation.isPending}
+                >
+                  {clearMutation.isPending ? 'Clearing...' : 'Clear DB'}
+                </button>
+              </div>
+              {uploadMutation.isError ? (
+                <p className="error">Upload failed. Check the backend logs.</p>
+              ) : null}
+              {clearMutation.isSuccess ? (
+                <p className="success">Database cleared!</p>
+              ) : null}
+              {runIds.length > 1 ? (
+                <div className="run-list">
+                  {runIds.map((runId) => (
+                    <button
+                      type="button"
+                      key={runId}
+                      className={runId === activeRunId ? 'run active' : 'run'}
+                      onClick={() => setActiveRunId(runId)}
+                    >
+                      {runId}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </form>
+          </section>
+        ) : activeStatus && activeStatus.state !== 'completed' ? (
+          // Processing phase - show status panel
           <section>
             <StatusPanel status={activeStatus} />
           </section>
         ) : (
-          <section className="panel empty">
-            <h2>No run yet</h2>
-            <p>Upload a CSV to initialize the pipeline.</p>
+          // Completed phase - show results with tabs
+          <section className="panel result">
+            <div className="result-tabs">
+              <button
+                type="button"
+                className={`result-tab ${resultTab === 'final' ? 'active' : ''}`}
+                onClick={() => setResultTab('final')}
+              >
+                Final Results
+              </button>
+              <button
+                type="button"
+                className={`result-tab ${resultTab === 'transcript' ? 'active' : ''}`}
+                onClick={() => setResultTab('transcript')}
+              >
+                Transcript
+              </button>
+              <button
+                type="button"
+                className={`result-tab ${resultTab === 'classification' ? 'active' : ''}`}
+                onClick={() => setResultTab('classification')}
+              >
+                Classification
+              </button>
+              <button
+                type="button"
+                className={`result-tab ${resultTab === 'article' ? 'active' : ''}`}
+                onClick={() => setResultTab('article')}
+              >
+                Article
+              </button>
+              <button
+                type="button"
+                className={`result-tab ${resultTab === 'title' ? 'active' : ''}`}
+                onClick={() => setResultTab('title')}
+              >
+                Title
+              </button>
+            </div>
+
+            <div className="panel-body">
+              {resultTab === 'final' ? (
+                <>
+                  {/* Payload CMS Button */}
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                    <button
+                      type="button"
+                      className="payload-btn"
+                      onClick={() => setShowPayloadDialog(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '8px',
+                        border: '2px solid #000',
+                        backgroundColor: '#000',
+                        color: '#fff',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        fontSize: '0.95rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#333';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#000';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+                      }}
+                    >
+                      <img
+                        src={payloadLogoUrl}
+                        alt="Payload CMS Logo"
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          flexShrink: 0,
+                          filter: 'invert(1)' // Make the black SVG white
+                        }}
+                      />
+                      Payload CMS Transfer
+                    </button>
+                  </div>
+                  {(() => {
+                    const stage4Data = (debugQuery.data?.stages as Record<string, { data?: {
+                      title?: string;
+                      content?: string;
+                      article_type?: string;
+                      title_guideline_used?: string;
+                    } }>)?.stage_4?.data
+                    const stage3Data = (debugQuery.data?.stages as Record<string, { data?: {
+                      article_type?: string;
+                      coverage_sufficient?: boolean;
+                      coverage_analysis?: string;
+                      missing_sections?: string[];
+                      supplemental_content?: string;
+                      final_article?: string;
+                    } }>)?.stage_3?.data
+
+                    return (
+                      <div className="final-results">
+                        {stage4Data?.title && (
+                          <div className="generated-title">
+                            <h2 className="title-display">{stage4Data.title}</h2>
+                          </div>
+                        )}
+                        {stage3Data?.final_article && (
+                          <div className="article-result">
+                            <div className="article-content">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{removeTitleFromArticle(stage3Data.final_article)}</ReactMarkdown>
+                            </div>
+                          </div>
+                        )}
+                        {(!stage4Data?.title && !stage3Data?.final_article) && (
+                          <p className="placeholder">Final results are being prepared...</p>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </>
+              ) : resultTab === 'transcript' ? (
+                <>
+                  {(() => {
+                    const stage1Data = (debugQuery.data?.stages as Record<string, { data?: { cleaned_transcript?: string } }>)?.stage_1?.data
+                    if (!stage1Data || !stage1Data.cleaned_transcript) {
+                      return <p className="placeholder">No transcript yet. Finish Stage 1 to see results.</p>
+                    }
+                    return (
+                      <div className="transcript-content">
+                        <pre>{stage1Data.cleaned_transcript}</pre>
+                      </div>
+                    )
+                  })()}
+                </>
+              ) : resultTab === 'classification' ? (
+                <>
+                  {(() => {
+                    const stage2Data = (debugQuery.data?.stages as Record<string, { data?: { classification?: string; confidence?: number; reasoning?: string } }>)?.stage_2?.data
+                    if (!stage2Data) {
+                      return <p className="placeholder">No classification yet. Finish Stage 2 to see results.</p>
+                    }
+                    const confidence = stage2Data.confidence ?? 0
+                    return (
+                      <div className="classification-result">
+                        <div className="classification-type">{stage2Data.classification}</div>
+                        <div className="confidence-section">
+                          <span className="confidence-label">Confidence: {Math.round(confidence * 100)}%</span>
+                          <div className="confidence-bar">
+                            <div className="confidence-fill" style={{ width: `${confidence * 100}%` }} />
+                          </div>
+                        </div>
+                        {stage2Data.reasoning ? (
+                          <p className="reasoning">"{stage2Data.reasoning}"</p>
+                        ) : null}
+                      </div>
+                    )
+                  })()}
+                </>
+              ) : resultTab === 'article' ? (
+                <>
+                  {(() => {
+                    const stage3Data = (debugQuery.data?.stages as Record<string, { data?: {
+                      article_type?: string;
+                      coverage_sufficient?: boolean;
+                      coverage_analysis?: string;
+                      missing_sections?: string[];
+                      supplemental_content?: string;
+                      final_article?: string;
+                    } }>)?.stage_3?.data
+                    if (!stage3Data) {
+                      return <p className="placeholder">No article yet. Finish Stage 3 to see results.</p>
+                    }
+                    return (
+                      <div className="article-result">
+                        <div className="article-content">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{removeTitleFromArticle(stage3Data.final_article ?? '')}</ReactMarkdown>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </>
+              ) : (
+                <>
+                  {(() => {
+                    const stage4Data = (debugQuery.data?.stages as Record<string, { data?: {
+                      title?: string;
+                      content?: string;
+                      article_type?: string;
+                      title_guideline_used?: string;
+                    } }>)?.stage_4?.data
+                    if (!stage4Data) {
+                      return <p className="placeholder">No title yet. Finish Stage 4 to see results.</p>
+                    }
+                    return (
+                      <div className="title-result">
+                        <div className="generated-title">
+                          <strong>Generated Title:</strong>
+                          <h2 className="title-display">{stage4Data.title}</h2>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </>
+              )}
+            </div>
           </section>
         )}
 
-        <section className="panel result">
-          <div className="result-tabs">
-            <button
-              type="button"
-              className={`result-tab ${resultTab === 'transcript' ? 'active' : ''}`}
-              onClick={() => setResultTab('transcript')}
-            >
-              Transcript
-            </button>
-            <button
-              type="button"
-              className={`result-tab ${resultTab === 'classification' ? 'active' : ''}`}
-              onClick={() => setResultTab('classification')}
-            >
-              Classification
-            </button>
-            <button
-              type="button"
-              className={`result-tab ${resultTab === 'article' ? 'active' : ''}`}
-              onClick={() => setResultTab('article')}
-            >
-              Article
-            </button>
-            <button
-              type="button"
-              className={`result-tab ${resultTab === 'title' ? 'active' : ''}`}
-              onClick={() => setResultTab('title')}
-            >
-              Title
-            </button>
-          </div>
-          <div className="panel-body">
-            {resultTab === 'transcript' ? (
-              <>
-                {resultQuery.isFetching ? <p>Cleaning transcript...</p> : null}
-                {resultQuery.data ? (
-                  <>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
-                    {activeRunId ? (
-                      <a className="download" href={resultDownloadUrl(activeRunId)}>
-                        Download transcript
-                      </a>
-                    ) : null}
-                  </>
-                ) : (
-                  <p className="placeholder">No transcript yet. Finish Stage 1 to see results.</p>
-                )}
-              </>
-            ) : resultTab === 'classification' ? (
-              <>
-                {(() => {
-                  const stage2Data = (debugQuery.data?.stages as Record<string, { data?: { classification?: string; confidence?: number; reasoning?: string } }>)?.stage_2?.data
-                  if (!stage2Data) {
-                    return <p className="placeholder">No classification yet. Finish Stage 2 to see results.</p>
-                  }
-                  const confidence = stage2Data.confidence ?? 0
-                  return (
-                    <div className="classification-result">
-                      <div className="classification-type">{stage2Data.classification}</div>
-                      <div className="confidence-section">
-                        <span className="confidence-label">Confidence: {Math.round(confidence * 100)}%</span>
-                        <div className="confidence-bar">
-                          <div className="confidence-fill" style={{ width: `${confidence * 100}%` }} />
-                        </div>
-                      </div>
-                      {stage2Data.reasoning ? (
-                        <p className="reasoning">"{stage2Data.reasoning}"</p>
-                      ) : null}
-                    </div>
-                  )
-                })()}
-              </>
-            ) : resultTab === 'article' ? (
-              <>
-                {(() => {
-                  const stage3Data = (debugQuery.data?.stages as Record<string, { data?: {
-                    article_type?: string;
-                    coverage_sufficient?: boolean;
-                    coverage_analysis?: string;
-                    missing_sections?: string[];
-                    supplemental_content?: string;
-                    final_article?: string;
-                  } }>)?.stage_3?.data
-                  if (!stage3Data) {
-                    return <p className="placeholder">No article yet. Finish Stage 3 to see results.</p>
-                  }
-                  return (
-                    <div className="article-result">
-                      {!stage3Data.coverage_sufficient && stage3Data.coverage_analysis ? (
-                        <div className="coverage-info">
-                          <strong>Coverage Analysis:</strong> {stage3Data.coverage_analysis}
-                          {stage3Data.missing_sections && stage3Data.missing_sections.length > 0 ? (
-                            <div className="missing-sections">
-                              <strong>Sections enhanced:</strong> {stage3Data.missing_sections.join(', ')}
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-                      <div className="article-content">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{stage3Data.final_article ?? ''}</ReactMarkdown>
-                      </div>
-                      {activeRunId ? (
-                        <a className="download" href={resultDownloadUrl(activeRunId)}>
-                          Download article
-                        </a>
-                      ) : null}
-                    </div>
-                  )
-                })()}
-              </>
-            ) : (
-              <>
-                {(() => {
-                  const stage4Data = (debugQuery.data?.stages as Record<string, { data?: {
-                    title?: string;
-                    content?: string;
-                    article_type?: string;
-                    title_guideline_used?: string;
-                  } }>)?.stage_4?.data
-                  if (!stage4Data) {
-                    return <p className="placeholder">No title yet. Finish Stage 4 to see results.</p>
-                  }
-                  return (
-                    <div className="title-result">
-                      <div className="generated-title">
-                        <strong>Generated Title:</strong>
-                        <h2 className="title-display">{stage4Data.title}</h2>
-                      </div>
-                      {activeRunId ? (
-                        <a className="download" href={resultDownloadUrl(activeRunId)}>
-                          Download article
-                        </a>
-                      ) : null}
-                    </div>
-                  )
-                })()}
-              </>
-            )}
-          </div>
-        </section>
-
-        {activeRunId ? (
+        {activeRunId && activeStatus?.state === 'completed' ? (
           <section className="panel debug">
             <div className="panel-header">
               <h2>Debug View</h2>
@@ -631,6 +748,27 @@ export default function HomePage() {
           </section>
         ) : null}
       </main>
+
+      {/* Payload CMS Development Dialog */}
+      {showPayloadDialog && (
+        <div className="modal-overlay" onClick={() => setShowPayloadDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Feature Under Development</h2>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setShowPayloadDialog(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>This feature is under development and will be available soon.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
