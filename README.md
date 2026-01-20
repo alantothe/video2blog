@@ -2,6 +2,10 @@
 
 An intelligent content creation platform that transforms YouTube video transcripts into polished, publication-ready blog articles using AI-powered processing pipelines.
 
+
+https://github.com/user-attachments/assets/6daf0aa8-c69b-4153-8be1-08ca9479eeb1
+
+
 ## What It Does
 
 AI Blog Writer automates the conversion of raw video transcripts into structured, engaging blog posts. Upload a CSV file containing video metadata and transcripts, and the system will:
