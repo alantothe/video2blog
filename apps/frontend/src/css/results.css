@@ -28,7 +28,7 @@
 }
 
 .result .panel-body {
-  max-height: 75vh;
+  max-height: 80vh;
   overflow-y: auto;
   padding: 0;
   gap: 2rem;
@@ -41,25 +41,25 @@
   overflow-wrap: break-word;
 }
 
-/* Enhanced Panel Header */
+/* Clean Panel Header */
 .result .panel-header {
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(27, 26, 23, 0.08);
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(27, 26, 23, 0.1);
 }
 
 .result .panel-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 600;
   color: var(--ink);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .result .panel-header p {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--muted);
-  font-weight: 500;
-  line-height: 1.6;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .result blockquote {
@@ -119,17 +119,17 @@
   color: #2b7a78;
 }
 
-/* Result Tabs - Enhanced Visual Hierarchy */
+/* Result Tabs - Clean, Intentional Design */
 .result-tabs {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 2rem;
-  padding: 1.25rem 0 2px 0;
-  border-bottom: 2px solid var(--border);
+  margin-bottom: 3rem;
+  padding: 1rem 0;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
   background: transparent;
+  justify-content: center;
 }
 
 .result-tabs::-webkit-scrollbar {
@@ -138,55 +138,41 @@
 
 .result-tab {
   font-family: 'Space Grotesk', sans-serif;
-  padding: 0.875rem 1.75rem;
-  border-radius: 8px;
+  padding: 1rem 2rem;
+  border-radius: 12px;
   cursor: pointer;
   border: 2px solid transparent;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.6);
   color: var(--muted);
   font-size: 0.875rem;
-  font-weight: 600;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   flex-shrink: 0;
   position: relative;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  box-shadow: 0 2px 8px rgba(27, 26, 23, 0.08);
-  backdrop-filter: blur(4px);
+  letter-spacing: 0.025em;
+  box-shadow: 0 1px 3px rgba(27, 26, 23, 0.06);
+  backdrop-filter: blur(8px);
   min-width: fit-content;
   text-align: center;
 }
 
 .result-tab:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.8);
   color: var(--ink);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(27, 26, 23, 0.15);
-  border-color: rgba(27, 26, 23, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(27, 26, 23, 0.1);
+  border-color: rgba(27, 26, 23, 0.08);
 }
 
 .result-tab.active {
   background: var(--accent);
   color: white;
   border-color: var(--accent);
-  box-shadow:
-    0 4px 16px rgba(243, 111, 43, 0.3),
-    0 2px 8px rgba(243, 111, 43, 0.15);
+  box-shadow: 0 2px 12px rgba(243, 111, 43, 0.25);
+  font-weight: 600;
   transform: translateY(-1px);
-  font-weight: 700;
-}
-
-.result-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  height: 3px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4));
-  border-radius: 2px;
 }
 
 .result-tab:focus {
@@ -194,38 +180,36 @@
   outline-offset: 2px;
   box-shadow:
     0 0 0 2px rgba(243, 111, 43, 0.15),
-    0 4px 16px rgba(27, 26, 23, 0.12);
+    0 2px 12px rgba(27, 26, 23, 0.08);
 }
 
-/* Classification Display - Enhanced Hierarchy */
+/* Classification Display - Clean, Focused Design */
 .classification-result {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2.5rem;
-  padding: 3.5rem 2.5rem;
+  gap: 2rem;
+  padding: 3rem 2rem;
   text-align: center;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.6));
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 16px;
-  border: 1px solid rgba(27, 26, 23, 0.08);
-  box-shadow: 0 4px 24px rgba(27, 26, 23, 0.08);
+  border: 1px solid rgba(27, 26, 23, 0.1);
+  box-shadow: 0 2px 16px rgba(27, 26, 23, 0.08);
 }
 
 .classification-type {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--ink);
-  background: linear-gradient(135deg, var(--accent), #d45a1f);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent);
   margin: 0;
   line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .confidence-section {
-  max-width: 480px;
+  max-width: 400px;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -233,66 +217,46 @@
 }
 
 .confidence-label {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 500;
   margin: 0;
   text-align: center;
 }
 
 .confidence-bar {
-  height: 16px;
-  background: rgba(27, 26, 23, 0.1);
-  border-radius: 8px;
+  height: 12px;
+  background: rgba(27, 26, 23, 0.08);
+  border-radius: 6px;
   overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(27, 26, 23, 0.15);
-  border: 1px solid rgba(27, 26, 23, 0.05);
+  border: 1px solid rgba(27, 26, 23, 0.06);
 }
 
 .confidence-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #e63946);
-  border-radius: 8px;
-  transition: width 0.8s ease-out;
-  box-shadow: 0 0 12px rgba(243, 111, 43, 0.4);
-  position: relative;
-}
-
-.confidence-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  background: linear-gradient(90deg, var(--accent), #d45a1f);
+  border-radius: 6px;
+  transition: width 0.6s ease-out;
 }
 
 .reasoning {
   color: var(--muted);
   font-style: italic;
-  max-width: 640px;
-  line-height: 1.7;
-  font-size: 1rem;
-  padding: 2rem;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 16px;
-  border-left: 5px solid var(--accent);
-  box-shadow: 0 2px 16px rgba(27, 26, 23, 0.06);
+  max-width: 600px;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  padding: 1.5rem;
+  background: rgba(27, 26, 23, 0.02);
+  border-radius: 12px;
+  border-left: 4px solid var(--accent);
   margin: 0;
 }
 
-/* Article Result Display - Enhanced Hierarchy */
+/* Article Result Display - Clean Content Layout */
 .article-result {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 2rem;
   padding: 0;
 }
 
@@ -359,32 +323,22 @@
 }
 
 .coverage-info {
-  background: linear-gradient(135deg, rgba(243, 111, 43, 0.06), rgba(243, 111, 43, 0.03));
-  border: 2px solid rgba(243, 111, 43, 0.15);
-  border-radius: 16px;
-  padding: 2rem;
-  font-size: 1rem;
-  line-height: 1.7;
+  background: rgba(243, 111, 43, 0.04);
+  border: 1px solid rgba(243, 111, 43, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
   color: var(--ink);
-  box-shadow: 0 4px 20px rgba(243, 111, 43, 0.12);
-  position: relative;
-}
-
-.coverage-info::before {
-  content: 'ℹ️';
-  position: absolute;
-  top: 1.5rem;
-  left: 1.5rem;
-  font-size: 1.25rem;
-  opacity: 0.7;
+  border-left: 4px solid var(--accent);
 }
 
 .coverage-info strong {
-  color: #d45a1f;
-  font-weight: 700;
+  color: var(--accent);
+  font-weight: 600;
   display: block;
   margin-bottom: 0.5rem;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .missing-sections {
@@ -406,13 +360,12 @@
 
 .article-content {
   max-width: 100%;
-  line-height: 1.75;
-  padding: 2.5rem;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
+  line-height: 1.7;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
   border: 1px solid rgba(27, 26, 23, 0.08);
-  box-shadow: 0 4px 24px rgba(27, 26, 23, 0.06);
-  position: relative;
+  box-shadow: 0 2px 16px rgba(27, 26, 23, 0.04);
 }
 
 .article-content h1,
@@ -422,24 +375,28 @@
 .article-content h5,
 .article-content h6 {
   color: var(--ink);
-  margin-top: 2rem;
-  margin-bottom: 1rem;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
 }
 
 .article-content h1 {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
+  font-weight: 700;
   border-bottom: 2px solid var(--accent);
   padding-bottom: 0.5rem;
 }
 
 .article-content h2 {
-  font-size: 1.5rem;
-  border-bottom: 1px solid var(--border);
+  font-size: 1.4rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(27, 26, 23, 0.1);
   padding-bottom: 0.25rem;
 }
 
 .article-content h3 {
   font-size: 1.2rem;
+  font-weight: 600;
 }
 
 .article-content p {
@@ -450,7 +407,7 @@
 .article-content ul,
 .article-content ol {
   margin-bottom: 1rem;
-  padding-left: 2rem;
+  padding-left: 1.5rem;
 }
 
 .article-content li {
@@ -458,56 +415,53 @@
 }
 
 .article-content blockquote {
-  border-left: 4px solid var(--accent);
+  border-left: 3px solid var(--accent);
   padding-left: 1rem;
   margin: 1rem 0;
   color: var(--muted);
   font-style: italic;
+  background: rgba(27, 26, 23, 0.02);
+  padding: 1rem 1rem 1rem 1.5rem;
+  border-radius: 0 8px 8px 0;
 }
 
-/* Title Result Display - Enhanced Typography */
+/* Title Result Display - Clean Typography */
 .generated-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   text-align: center;
-  padding: 3rem 2.5rem;
-  background: linear-gradient(135deg, rgba(243, 111, 43, 0.06), rgba(243, 111, 43, 0.03));
-  border-radius: 20px;
-  border: 2px solid rgba(243, 111, 43, 0.15);
-  box-shadow: 0 6px 32px rgba(243, 111, 43, 0.15);
-  position: relative;
-  overflow: hidden;
-}
-
-.generated-title::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--accent), #e63946);
+  padding: 2.5rem 2rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  border: 1px solid rgba(27, 26, 23, 0.1);
+  box-shadow: 0 2px 16px rgba(27, 26, 23, 0.08);
 }
 
 .generated-title strong {
-  display: block;
   font-size: 0.875rem;
   color: var(--muted);
   font-weight: 600;
-  margin-bottom: 1.5rem;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
-  opacity: 0.8;
+  letter-spacing: 0.125em;
+  margin: 0;
 }
 
 .title-display {
-  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-size: clamp(1.5rem, 3.5vw, 2.25rem);
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
   color: var(--ink);
   margin: 0;
   font-family: 'Space Grotesk', sans-serif;
-  text-shadow: 0 1px 2px rgba(27, 26, 23, 0.1);
-  position: relative;
-  z-index: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.title-result {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .title-guideline-info {
@@ -545,31 +499,35 @@
   transform: translateY(0);
 }
 
-/* Responsive Design Improvements */
+/* Responsive Design - Consistent Scaling */
 @media (max-width: 768px) {
   .result-tabs {
-    padding: 1rem 0 2px 0;
-    gap: 0.375rem;
+    gap: 0.5rem;
+    margin-bottom: 2.5rem;
+    padding: 0.75rem 0;
   }
 
   .result-tab {
-    padding: 0.75rem 1.25rem;
+    padding: 0.875rem 1.5rem;
     font-size: 0.8rem;
-    letter-spacing: 0.03em;
   }
 
   .result .panel-body {
-    max-height: 65vh;
+    max-height: 70vh;
     gap: 1.5rem;
   }
 
   .classification-result {
-    padding: 2.5rem 1.5rem;
-    gap: 2rem;
+    padding: 2rem 1.5rem;
+    gap: 1.5rem;
   }
 
   .classification-type {
     font-size: 1.75rem;
+  }
+
+  .confidence-section {
+    max-width: 350px;
   }
 
   .article-content {
@@ -578,27 +536,42 @@
 
   .generated-title {
     padding: 2rem 1.5rem;
+    gap: 1.25rem;
   }
 
   .title-display {
-    font-size: 1.5rem;
+    font-size: clamp(1.4rem, 3vw, 2rem);
   }
 }
 
 @media (max-width: 480px) {
   .result-tabs {
-    padding: 0.875rem 0 2px 0;
-    gap: 0.25rem;
+    gap: 0.375rem;
+    margin-bottom: 2rem;
+    padding: 0.5rem 0;
   }
 
   .result-tab {
-    padding: 0.625rem 1rem;
+    padding: 0.75rem 1.25rem;
     font-size: 0.75rem;
-    letter-spacing: 0.02em;
   }
 
   .classification-result {
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
+    gap: 1.25rem;
+  }
+
+  .classification-type {
+    font-size: 1.5rem;
+  }
+
+  .confidence-section {
+    max-width: 300px;
+  }
+
+  .reasoning {
+    padding: 1.25rem;
+    font-size: 0.9rem;
   }
 
   .article-meta {
@@ -608,11 +581,8 @@
   }
 
   .coverage-info {
-    padding: 1.5rem;
-  }
-
-  .coverage-info::before {
-    display: none;
+    padding: 1.25rem;
+    font-size: 0.9rem;
   }
 
   .article-content {
@@ -621,5 +591,10 @@
 
   .generated-title {
     padding: 1.5rem 1rem;
+    gap: 1rem;
+  }
+
+  .title-display {
+    font-size: clamp(1.2rem, 2.5vw, 1.75rem);
   }
 }
