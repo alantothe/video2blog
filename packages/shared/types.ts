@@ -25,6 +25,7 @@ export type ArticleType = {
   name: string
   definition: string
   guideline: string | null
+  title_guideline: string | null
   created_at: string
   updated_at: string
 }

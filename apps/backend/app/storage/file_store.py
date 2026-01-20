@@ -11,6 +11,20 @@ from typing import Any, Dict, Optional
 from app.config import DATA_DIR, DB_PATH
 
 
+def _migrate_add_title_guideline_column(conn):
+    """Add title_guideline column to article_types table if it doesn't exist."""
+    # Check if column exists
+    cursor = conn.execute("PRAGMA table_info(article_types)")
+    columns = [row[1] for row in cursor.fetchall()]
+
+    if "title_guideline" not in columns:
+        # Add the column (SQLite sets existing rows to NULL by default)
+        conn.execute("ALTER TABLE article_types ADD COLUMN title_guideline TEXT DEFAULT ''")
+
+    # Ensure all existing records have blank title_guideline only if they are NULL
+    conn.execute("UPDATE article_types SET title_guideline = '' WHERE title_guideline IS NULL")
+
+
 def _ensure_db():
     """Create database and tables if they don't exist."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -47,10 +61,13 @@ def _ensure_db():
                 name TEXT NOT NULL UNIQUE,
                 definition TEXT NOT NULL,
                 guideline TEXT,
+                title_guideline TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
         """)
+        # Migration: Add title_guideline column if it doesn't exist
+        _migrate_add_title_guideline_column(conn)
 
 
 @contextmanager
@@ -204,17 +221,18 @@ def get_all_runs() -> list:
         return [dict(row) for row in rows]
 
 
-def write_article_type(name: str, definition: str, guideline: str = None) -> int:
+def write_article_type(name: str, definition: str, guideline: str = None, title_guideline: str = None) -> int:
     """Write or update an article type. Returns the article type ID."""
     with _get_conn() as conn:
         cursor = conn.execute("""
-            INSERT INTO article_types (name, definition, guideline, created_at, updated_at)
-            VALUES (?, ?, ?, datetime('now'), datetime('now'))
+            INSERT INTO article_types (name, definition, guideline, title_guideline, created_at, updated_at)
+            VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
             ON CONFLICT(name) DO UPDATE SET
                 definition = excluded.definition,
-                guideline = CASE WHEN excluded.guideline IS NOT NULL THEN excluded.guideline ELSE article_types.guideline END,
+                guideline = excluded.guideline,
+                title_guideline = excluded.title_guideline,
                 updated_at = excluded.updated_at
-        """, (name, definition, guideline))
+        """, (name, definition, guideline, title_guideline))
         return cursor.lastrowid or conn.execute(
             "SELECT id FROM article_types WHERE name = ?", (name,)
         ).fetchone()[0]
@@ -224,7 +242,7 @@ def read_article_types() -> list:
     """Read all article types with their definitions."""
     with _get_conn() as conn:
         rows = conn.execute(
-            "SELECT id, name, definition, guideline, created_at, updated_at FROM article_types ORDER BY name"
+            "SELECT id, name, definition, guideline, title_guideline, created_at, updated_at FROM article_types ORDER BY name"
         ).fetchall()
         return [dict(row) for row in rows]
 
@@ -260,7 +278,7 @@ def get_article_type_by_name(name: str) -> Optional[Dict[str, Any]]:
     """Read a specific article type by name."""
     with _get_conn() as conn:
         row = conn.execute(
-            "SELECT * FROM article_types WHERE name = ?", (name,)
+            "SELECT id, name, definition, guideline, title_guideline, created_at, updated_at FROM article_types WHERE name = ?", (name,)
         ).fetchone()
         if not row:
             return None
