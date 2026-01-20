@@ -343,10 +343,6 @@ export default function HomePage() {
         )}
 
         <section className="panel result">
-          <div className="panel-header">
-            <h2>Results</h2>
-            <p>Pipeline outputs from completed stages.</p>
-          </div>
           <div className="result-tabs">
             <button
               type="button"
@@ -434,12 +430,6 @@ export default function HomePage() {
                   }
                   return (
                     <div className="article-result">
-                      <div className="article-meta">
-                        <span className="article-type-badge">{stage3Data.article_type}</span>
-                        <span className={`coverage-badge ${stage3Data.coverage_sufficient ? 'sufficient' : 'enhanced'}`}>
-                          {stage3Data.coverage_sufficient ? 'Full Coverage' : 'Enhanced with AI'}
-                        </span>
-                      </div>
                       {!stage3Data.coverage_sufficient && stage3Data.coverage_analysis ? (
                         <div className="coverage-info">
                           <strong>Coverage Analysis:</strong> {stage3Data.coverage_analysis}
@@ -476,9 +466,6 @@ export default function HomePage() {
                   }
                   return (
                     <div className="title-result">
-                      <div className="article-meta">
-                        <span className="article-type-badge">{stage4Data.article_type}</span>
-                      </div>
                       <div className="generated-title">
                         <strong>Generated Title:</strong>
                         <h2 className="title-display">{stage4Data.title}</h2>
