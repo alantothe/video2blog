@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { createArticleType, deleteArticleType, fetchArticleTypes, updateArticleType } from './api'
@@ -122,7 +123,11 @@ export default function ArticleTypesPage() {
             Add, edit, and delete article types used by the classification pipeline.
           </p>
         </div>
-        <div className="badge">{articleTypes.length} types</div>
+        <div className="badge-row">
+          <div className="badge">{articleTypes.length} types</div>
+          <Link to="/" className="nav-link">Back to Pipeline</Link>
+          <Link to="/articles" className="nav-link">Saved Articles</Link>
+        </div>
       </header>
 
       <main className="layout">

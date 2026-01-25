@@ -1,0 +1,108 @@
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { fetchArticles, type SavedArticle } from './api'
+
+function formatDate(dateString: string): string {
+  if (!dateString) return 'Unknown'
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return dateString
+  }
+}
+
+function ArticleCard({ article }: { article: SavedArticle }) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="article-card">
+      <div className="article-card-header">
+        <div className="article-card-info">
+          <h3>{article.title || 'Untitled Article'}</h3>
+          <div className="article-card-meta">
+            {article.article_type && (
+              <span className="article-type-badge">{article.article_type}</span>
+            )}
+            <span className="article-date">{formatDate(article.updated_at)}</span>
+            <span className="article-length">{Math.round(article.markdown_length / 1000)}k chars</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="expand-btn"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
+      {expanded && (
+        <div className="article-card-content">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{article.markdown}</ReactMarkdown>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function ArticlesPage() {
+  const articlesQuery = useQuery({
+    queryKey: ['articles'],
+    queryFn: fetchArticles,
+  })
+
+  const articles = articlesQuery.data ?? []
+
+  return (
+    <div className="page">
+      <header className="hero">
+        <div>
+          <p className="eyebrow">Questurian Studio</p>
+          <h1>Saved <span className="underline-text">Articles</span><span className="orange-dot">.</span></h1>
+          <p className="lede">
+            View all your previously generated articles.
+          </p>
+        </div>
+        <div className="badge-row">
+          <Link to="/" className="nav-link">Back to Pipeline</Link>
+          <Link to="/article-types" className="nav-link">Article Types</Link>
+        </div>
+      </header>
+
+      <main className="layout">
+        <section className="panel">
+          <div className="panel-header">
+            <h2>All Articles ({articles.length})</h2>
+          </div>
+          <div className="panel-body">
+            {articlesQuery.isLoading ? (
+              <p className="placeholder">Loading articles...</p>
+            ) : articlesQuery.isError ? (
+              <p className="error">Failed to load articles. Is the backend running?</p>
+            ) : articles.length === 0 ? (
+              <div className="empty-state">
+                <p>No articles yet.</p>
+                <p className="muted">Upload a CSV to generate your first article.</p>
+              </div>
+            ) : (
+              <div className="articles-list">
+                {articles.map((article) => (
+                  <ArticleCard key={article.run_id} article={article} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  )
+}

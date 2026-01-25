@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -306,6 +307,8 @@ export default function HomePage() {
           <div className="badge">
             {activeBadge}
           </div>
+          <Link to="/articles" className="nav-link">Saved Articles</Link>
+          <Link to="/article-types" className="nav-link">Article Types</Link>
         </div>
       </header>
 

@@ -63,6 +63,24 @@ export async function fetchDebug(runId: string): Promise<DebugResponse> {
   return response.json()
 }
 
+export type SavedArticle = {
+  run_id: string
+  title: string | null
+  article_type: string | null
+  created_at: string
+  updated_at: string
+  markdown: string
+  markdown_length: number
+}
+
+export async function fetchArticles(): Promise<SavedArticle[]> {
+  const response = await fetch(`${API_BASE_URL}/articles`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch articles')
+  }
+  return response.json()
+}
+
 export async function fetchArticleTypes(): Promise<ArticleType[]> {
   const response = await fetch(`${API_BASE_URL}/article-types`)
   if (!response.ok) {

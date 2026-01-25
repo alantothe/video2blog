@@ -221,6 +221,52 @@ def get_all_runs() -> list:
         return [dict(row) for row in rows]
 
 
+def get_all_completed_articles() -> list:
+    """Get all completed articles with their outputs."""
+    with _get_conn() as conn:
+        rows = conn.execute("""
+            SELECT
+                r.run_id,
+                r.status,
+                r.created_at,
+                r.updated_at,
+                o.markdown,
+                o.artifact
+            FROM runs r
+            INNER JOIN outputs o ON r.run_id = o.run_id
+            WHERE r.status = 'completed'
+            ORDER BY r.updated_at DESC
+        """).fetchall()
+
+        articles = []
+        for row in rows:
+            artifact = json.loads(row["artifact"]) if row["artifact"] else {}
+
+            # Extract title from stage_4 data if available
+            title = None
+            article_type = None
+            stages = artifact.get("stages", {})
+            if "stage_4" in stages:
+                stage4_data = stages["stage_4"].get("data", {})
+                title = stage4_data.get("title")
+                article_type = stage4_data.get("article_type")
+            elif "stage_3" in stages:
+                stage3_data = stages["stage_3"].get("data", {})
+                article_type = stage3_data.get("article_type")
+
+            articles.append({
+                "run_id": row["run_id"],
+                "title": title,
+                "article_type": article_type,
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "markdown": row["markdown"],
+                "markdown_length": len(row["markdown"]) if row["markdown"] else 0,
+            })
+
+        return articles
+
+
 def write_article_type(name: str, definition: str, guideline: str = None, title_guideline: str = None) -> int:
     """Write or update an article type. Returns the article type ID."""
     with _get_conn() as conn:

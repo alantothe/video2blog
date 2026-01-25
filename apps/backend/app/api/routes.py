@@ -15,7 +15,13 @@ from app.storage.file_store import (
     get_article_type_by_name,
     delete_article_type,
 )
-from app.storage.file_store import clear_all, read_output, read_stage_result, read_status
+from app.storage.file_store import (
+    clear_all,
+    get_all_completed_articles,
+    read_output,
+    read_stage_result,
+    read_status,
+)
 from utils import parse_csv
 
 router = APIRouter()
@@ -202,6 +208,15 @@ async def debug_run(run_id: str) -> JSONResponse:
         "stages": stages,
         "output": output
     })
+
+
+@router.get("/articles")
+async def get_articles() -> JSONResponse:
+    """
+    Get all completed articles.
+    """
+    articles = get_all_completed_articles()
+    return JSONResponse(articles)
 
 
 @router.get("/article-types")
