@@ -149,8 +149,8 @@ npx nx serve frontend
 ```
 
 Access the application at:
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8000
+- **Frontend**: http://localhost:3003
+- **Backend API**: http://localhost:4003
 
 ## Docker Setup (Alternative)
 
@@ -161,15 +161,15 @@ docker compose up --build
 ```
 
 This starts all services:
-- FastAPI backend (:8000)
-- React frontend (:5173)
+- FastAPI backend (:4003)
+- React frontend (:3003)
 - Weaviate vector database (:8080)
 
 ## Usage
 
 ### Web Interface
 
-1. Open http://localhost:5173
+1. Open http://localhost:3003
 2. Upload a CSV file containing video metadata and transcripts
 3. Monitor the 4-stage processing pipeline in real-time
 4. Download the generated articles when complete
@@ -178,21 +178,21 @@ This starts all services:
 
 #### Upload CSV for Processing
 ```bash
-curl -F "file=@videos.csv" http://localhost:8000/upload
+curl -F "file=@videos.csv" http://localhost:4003/upload
 ```
 
 #### Check Processing Status
 ```bash
-curl http://localhost:8000/status/<run_id>
+curl http://localhost:4003/status/<run_id>
 ```
 
 #### Get Results
 ```bash
 # Get JSON response with article and metadata
-curl http://localhost:8000/result/<run_id>
+curl http://localhost:4003/result/<run_id>
 
 # Get just the markdown article
-curl http://localhost:8000/result/<run_id>?format=md
+curl http://localhost:4003/result/<run_id>?format=md
 ```
 
 ### CSV Format
@@ -258,13 +258,13 @@ npx nx build backend      # Python bytecode compilation
 
 ```bash
 # Test individual pipeline stages
-curl -X POST http://localhost:8000/test-stage1
+curl -X POST http://localhost:4003/test-stage1
 
 # Test full pipeline with sample data
-curl -X POST http://localhost:8000/test
+curl -X POST http://localhost:4003/test
 
 # Clear database between tests
-curl -X POST http://localhost:8000/clear
+curl -X POST http://localhost:4003/clear
 ```
 
 ## Output Formats

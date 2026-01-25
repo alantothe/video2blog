@@ -1,5 +1,5 @@
 {
-  "name": "ai-blog-writer",
+  "name": "@questurian/ai-blog-writer",
   "private": true,
   "version": "0.1.0",
   "workspaces": [
@@ -7,11 +7,12 @@
     "packages/*"
   ],
   "scripts": {
-    "nx": "nx",
+    "dev": "npm run dev:docker",
+    "dev:clean": "(lsof -ti:4003 -ti:3003 | xargs kill -9 2>/dev/null || true); npm install && pip install -r apps/backend/requirements.txt && nx run-many -t serve",
+    "build": "nx run-many -t build",
     "lint": "nx run-many -t lint",
     "test": "nx run-many -t test",
-    "serve": "nx run-many -t serve",
-    "build": "nx run-many -t build",
+    "dev:docker": "docker compose up --build",
     "docker:build": "nx run-many -t docker-build"
   },
   "dependencies": {

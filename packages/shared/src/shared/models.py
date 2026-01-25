@@ -10,23 +10,11 @@ class RawVideoRecord(BaseModel):
     video_id: str
     title: str
     description: str
-    channel_title: str
-    channel_id: str
     video_url: str
     published_at: str
     transcript: str
     transcript_status: Literal["completed", "pending", "failed"]
     transcript_extracted_at: str
-    feed_display_name: str
-    channel_summary: str
-    primary_topics: str
-    audience: str
-    language_region: str
-    hosts: str
-    formats: str
-    tone_style: str
-    expertise_background: str
-    credibility_bias_notes: str
 
 
 class PipelineMeta(BaseModel):

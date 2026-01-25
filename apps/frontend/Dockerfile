@@ -7,5 +7,5 @@ RUN npm install
 
 COPY . /app
 
-EXPOSE 5173
-CMD ["npx", "nx", "serve", "frontend", "--host", "0.0.0.0", "--port", "5173"]
+EXPOSE 3003
+CMD ["npx", "nx", "serve", "@questurian/abw-client", "--host", "0.0.0.0", "--port", "3003"]

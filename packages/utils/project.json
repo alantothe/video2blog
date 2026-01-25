@@ -1,5 +1,5 @@
 {
-  "name": "utils",
+  "name": "@questurian/abw-utils",
   "projectType": "library",
   "sourceRoot": "packages/utils/src",
   "targets": {

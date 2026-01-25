@@ -1,5 +1,5 @@
 {
-  "name": "shared",
+  "name": "@questurian/abw-shared",
   "projectType": "library",
   "sourceRoot": "packages/shared/src",
   "targets": {

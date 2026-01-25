@@ -1,12 +1,12 @@
 {
-  "name": "frontend",
+  "name": "@questurian/abw-client",
   "projectType": "application",
   "sourceRoot": "apps/frontend/src",
   "targets": {
     "serve": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "vite --config apps/frontend/vite.config.ts --host 0.0.0.0 --port 5173"
+        "command": "node apps/frontend/scripts/show-commands.cjs && vite --config apps/frontend/vite.config.ts --host 0.0.0.0 --port 3003"
       }
     },
     "build": {

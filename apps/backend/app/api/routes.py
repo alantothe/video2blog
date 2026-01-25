@@ -21,13 +21,17 @@ from utils import parse_csv
 router = APIRouter()
 
 
+@router.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "ok"}
+
+
 # Hardcoded test record for /test endpoint
 TEST_RECORD = RawVideoRecord(
     video_id="test_video_001",
     title="How to Build AI Pipelines That Actually Work",
     description="A deep dive into building reliable AI pipelines.",
-    channel_title="AI Engineering Podcast",
-    channel_id="UC123456",
     video_url="https://youtube.com/watch?v=test123",
     published_at="2024-01-15T10:00:00Z",
     transcript="""Hey everyone, welcome back to the AI Engineering Podcast!
@@ -55,16 +59,6 @@ If you found this helpful, don't forget to like and subscribe!
 And check out CloudProvider in the description below. See you next time!""",
     transcript_status="completed",
     transcript_extracted_at="2024-01-15T10:30:00Z",
-    feed_display_name="AI Engineering",
-    channel_summary="Technical podcast about AI engineering best practices.",
-    primary_topics='["AI", "Engineering", "Pipelines", "Production"]',
-    audience="AI Engineers and developers",
-    language_region="en-US",
-    hosts="Alex Smith",
-    formats='["podcast", "tutorial"]',
-    tone_style='["technical", "conversational"]',
-    expertise_background="Senior AI Engineer",
-    credibility_bias_notes="Practical experience-based content",
 )
 
 
